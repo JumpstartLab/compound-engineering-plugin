@@ -10,8 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **`proof` skill** — Create, edit, comment on, and share markdown documents via Proof's web API and local bridge. Supports document creation, track-changes suggestions, comments, and bulk rewrites. No authentication required for creating shared documents.
-- **Proof upload in `/workflows:brainstorm`** — After writing the brainstorm document, automatically uploads it to Proof and displays a shareable URL for collaborative review.
-- **Proof upload in `/workflows:plan`** — After writing the plan file, automatically uploads it to Proof and displays a shareable URL for collaborative review.
+- **Optional Proof sharing in `/workflows:brainstorm`** — "Share to Proof" is now a menu option in Phase 4 handoff, letting you upload the brainstorm document when you want to, rather than automatically on every run.
+- **Optional Proof sharing in `/workflows:plan`** — "Share to Proof" is now a menu option in Post-Generation Options, letting you upload the plan file on demand rather than automatically.
 
 ---
 

@@ -544,31 +544,6 @@ Use the Write tool to save the complete plan to `docs/plans/YYYY-MM-DD-<type>-<d
 
 Confirm: "Plan written to docs/plans/[filename]"
 
-### Share to Proof
-
-After writing the plan file, upload it to Proof for collaborative review:
-
-```bash
-# Read the plan file content
-CONTENT=$(cat docs/plans/YYYY-MM-DD-<type>-<descriptive-name>-plan.md)
-TITLE="Plan: <plan title from frontmatter>"
-
-# Upload to Proof
-RESPONSE=$(curl -s -X POST https://www.proofeditor.ai/share/markdown \
-  -H "Content-Type: application/json" \
-  -d "$(jq -n --arg title "$TITLE" --arg markdown "$CONTENT" --arg by "ai:compound" '{title: $title, markdown: $markdown, by: $by}')")
-
-PROOF_URL=$(echo "$RESPONSE" | jq -r '.tokenUrl')
-```
-
-Display the Proof URL prominently:
-
-```
-View & collaborate in Proof: <PROOF_URL>
-```
-
-If the curl fails (network error, non-JSON response), skip silently and continue — Proof sharing is optional.
-
 **Pipeline mode:** If invoked from an automated workflow (LFG, SLFG, or any `disable-model-invocation` context), skip all AskUserQuestion calls. Make decisions automatically and proceed to writing the plan without interactive prompts.
 
 ## Output Format
@@ -599,15 +574,26 @@ After writing the plan file, use the **AskUserQuestion tool** to present these o
 2. **Run `/deepen-plan`** - Enhance each section with parallel research agents (best practices, performance, UI)
 3. **Run `/technical_review`** - Technical feedback from code-focused reviewers (DHH, Kieran, Simplicity)
 4. **Review and refine** - Improve the document through structured self-review
-5. **Start `/workflows:work`** - Begin implementing this plan locally
-6. **Start `/workflows:work` on remote** - Begin implementing in Claude Code on the web (use `&` to run in background)
-7. **Create Issue** - Create issue in project tracker (GitHub/Linear)
+5. **Share to Proof** - Upload to Proof for collaborative review and sharing
+6. **Start `/workflows:work`** - Begin implementing this plan locally
+7. **Start `/workflows:work` on remote** - Begin implementing in Claude Code on the web (use `&` to run in background)
+8. **Create Issue** - Create issue in project tracker (GitHub/Linear)
 
 Based on selection:
 - **Open plan in editor** → Run `open docs/plans/<plan_filename>.md` to open the file in the user's default editor
 - **`/deepen-plan`** → Call the /deepen-plan command with the plan file path to enhance with research
 - **`/technical_review`** → Call the /technical_review command with the plan file path
 - **Review and refine** → Load `document-review` skill.
+- **Share to Proof** → Upload the plan to Proof:
+  ```bash
+  CONTENT=$(cat docs/plans/<plan_filename>.md)
+  TITLE="Plan: <plan title from frontmatter>"
+  RESPONSE=$(curl -s -X POST https://www.proofeditor.ai/share/markdown \
+    -H "Content-Type: application/json" \
+    -d "$(jq -n --arg title "$TITLE" --arg markdown "$CONTENT" --arg by "ai:compound" '{title: $title, markdown: $markdown, by: $by}')")
+  PROOF_URL=$(echo "$RESPONSE" | jq -r '.tokenUrl')
+  ```
+  Display: `View & collaborate in Proof: <PROOF_URL>` — skip silently if curl fails. Then return to options.
 - **`/workflows:work`** → Call the /workflows:work command with the plan file path
 - **`/workflows:work` on remote** → Run `/workflows:work docs/plans/<plan_filename>.md &` to start work in background for Claude Code web
 - **Create Issue** → See "Issue Creation" section below
