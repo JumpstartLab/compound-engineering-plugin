@@ -5,6 +5,16 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.38.0] - 2026-03-01
+
+### Changed
+- `workflows:plan`, `workflows:work`, `workflows:review`, `workflows:brainstorm`, `workflows:compound` renamed to `ce:plan`, `ce:work`, `ce:review`, `ce:brainstorm`, `ce:compound` for clarity — the `ce:` prefix unambiguously identifies these as compound-engineering commands
+
+### Deprecated
+- `workflows:*` commands — all five remain functional as aliases that forward to their `ce:*` equivalents with a deprecation notice. Will be removed in a future version.
+
+---
+
 ## [2.37.2] - 2026-03-01
 
 ### Added

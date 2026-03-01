@@ -35,7 +35,8 @@ agents/
 └── docs/       # Documentation agents
 
 commands/
-├── workflows/  # Core workflow commands (workflows:plan, workflows:review, etc.)
+├── ce/         # Core workflow commands (ce:plan, ce:review, etc.)
+├── workflows/  # Deprecated aliases for ce:* commands
 └── *.md        # Utility commands
 
 skills/
@@ -44,13 +45,14 @@ skills/
 
 ## Command Naming Convention
 
-**Workflow commands** use `workflows:` prefix to avoid collisions with built-in commands:
-- `/workflows:plan` - Create implementation plans
-- `/workflows:review` - Run comprehensive code reviews
-- `/workflows:work` - Execute work items systematically
-- `/workflows:compound` - Document solved problems
+**Workflow commands** use `ce:` prefix to unambiguously identify them as compound-engineering commands:
+- `/ce:plan` - Create implementation plans
+- `/ce:review` - Run comprehensive code reviews
+- `/ce:work` - Execute work items systematically
+- `/ce:compound` - Document solved problems
+- `/ce:brainstorm` - Explore requirements and approaches before planning
 
-**Why `workflows:`?** Claude Code has built-in `/plan` and `/review` commands. Using `name: workflows:plan` in frontmatter creates a unique `/workflows:plan` command with no collision.
+**Why `ce:`?** Claude Code has built-in `/plan` and `/review` commands. The `ce:` namespace (short for compound-engineering) makes it immediately clear these commands belong to this plugin. The legacy `workflows:` prefix is still supported as deprecated aliases that forward to the `ce:*` equivalents.
 
 ## Skill Compliance Checklist
 

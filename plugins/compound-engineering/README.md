@@ -73,15 +73,17 @@ Agents are organized into categories for easier discovery.
 
 ### Workflow Commands
 
-Core workflow commands use `workflows:` prefix to avoid collisions with built-in commands:
+Core workflow commands use `ce:` prefix to unambiguously identify them as compound-engineering commands:
 
 | Command | Description |
 |---------|-------------|
-| `/workflows:brainstorm` | Explore requirements and approaches before planning |
-| `/workflows:plan` | Create implementation plans |
-| `/workflows:review` | Run comprehensive code reviews |
-| `/workflows:work` | Execute work items systematically |
-| `/workflows:compound` | Document solved problems to compound team knowledge |
+| `/ce:brainstorm` | Explore requirements and approaches before planning |
+| `/ce:plan` | Create implementation plans |
+| `/ce:review` | Run comprehensive code reviews |
+| `/ce:work` | Execute work items systematically |
+| `/ce:compound` | Document solved problems to compound team knowledge |
+
+> **Deprecated aliases:** `/workflows:plan`, `/workflows:work`, `/workflows:review`, `/workflows:brainstorm`, `/workflows:compound` still work but show a deprecation warning. Use `ce:*` equivalents.
 
 ### Utility Commands
 

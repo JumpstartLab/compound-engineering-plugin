@@ -130,10 +130,10 @@ Plan → Work → Review → Compound → Repeat
 
 | Command | Purpose |
 |---------|---------|
-| `/workflows:plan` | Turn feature ideas into detailed implementation plans |
-| `/workflows:work` | Execute plans with worktrees and task tracking |
-| `/workflows:review` | Multi-agent code review before merging |
-| `/workflows:compound` | Document learnings to make future work easier |
+| `/ce:plan` | Turn feature ideas into detailed implementation plans |
+| `/ce:work` | Execute plans with worktrees and task tracking |
+| `/ce:review` | Multi-agent code review before merging |
+| `/ce:compound` | Document learnings to make future work easier |
 
 Each cycle compounds: plans inform future plans, reviews catch more issues, patterns get documented.
 
