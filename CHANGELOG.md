@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Release numbering now follows the repository `v*` tag line. Starting at `v2.34.0`, the root CLI package and this changelog stay on that shared version stream. Older entries below retain the previous `0.x` CLI numbering.
 
+# [2.41.0](https://github.com/EveryInc/compound-engineering-plugin/compare/v2.40.3...v2.41.0) (2026-03-17)
+
+
+### Bug Fixes
+
+* tune ce:ideate volume model and presentation format ([3023bfc](https://github.com/EveryInc/compound-engineering-plugin/commit/3023bfc8c1ffba3130db1d53752ba0246866625d))
+
+
+### Features
+
+* add issue-grounded ideation mode to ce:ideate ([0fc6717](https://github.com/EveryInc/compound-engineering-plugin/commit/0fc6717542f05e990becb5f5674411efc8a6a710))
+* refine ce:ideate skill with per-agent volume model and cross-cutting synthesis ([b762c76](https://github.com/EveryInc/compound-engineering-plugin/commit/b762c7647cffb9a6a1ba27bc439623f59b088ec9))
+
 ## [2.40.3](https://github.com/EveryInc/compound-engineering-plugin/compare/v2.40.2...v2.40.3) (2026-03-17)
 
 
