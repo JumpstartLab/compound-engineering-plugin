@@ -84,6 +84,7 @@ If a review agent flags any file in these directories for cleanup or removal, di
 | `4-code-review-code-simplicity` | Any non-trivial code change — **include by default** | Docs-only, config-only changes |
 | `4-code-review-corey-test` | PR adds/modifies tests, or adds features that should have tests | No test files touched and no new behavior added |
 | `4-code-review-pattern-recognition` | Multiple files with similar patterns, new abstractions, refactors | Single-file bugfixes |
+| `4-code-review-sandi-metz-oo` | New classes/modules, service objects, refactors, dependency changes | Config-only, docs-only, simple bugfixes |
 | `4-code-review-security-sentinel` | Auth, API endpoints, user input handling, env vars, secrets | Internal refactors with no external surface |
 | `4-code-review-performance-oracle` | DB queries, N+1 risk, batch processing, caching, loops | UI-only changes, docs |
 | `4-code-review-data-integrity` | Model changes, validations, scopes, DB schema | No model/migration changes |
@@ -95,7 +96,7 @@ If a review agent flags any file in these directories for cleanup or removal, di
 
 **Quick classification by file patterns:**
 
-- **Ruby models/services/jobs** (`app/models/`, `app/services/`, `app/jobs/`) → architecture, simplicity, performance, corey-test, pattern-recognition
+- **Ruby models/services/jobs** (`app/models/`, `app/services/`, `app/jobs/`) → architecture, simplicity, performance, corey-test, sandi-metz-oo, pattern-recognition
 - **Controllers/views** (`app/controllers/`, `app/views/`) → security, simplicity, agent-native
 - **JavaScript/Stimulus** (`app/javascript/`, `*.js`) → julik-frontend-races, simplicity
 - **Migrations** (`db/migrate/`) → data-integrity, data-migration, deployment-verification

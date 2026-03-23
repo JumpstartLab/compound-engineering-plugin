@@ -54,6 +54,7 @@
     "./agents/4-code-review-julik-frontend-races.md",
     "./agents/4-code-review-pattern-recognition.md",
     "./agents/4-code-review-performance-oracle.md",
+    "./agents/4-code-review-sandi-metz-oo.md",
     "./agents/4-code-review-security-sentinel.md",
     "./agents/5-compound-ankane-readme.md",
     "./agents/5-compound-every-style-editor.md",
