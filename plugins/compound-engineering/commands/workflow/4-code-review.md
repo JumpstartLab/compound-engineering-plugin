@@ -59,74 +59,72 @@ The following paths are compound-engineering pipeline artifacts and must never b
 If a review agent flags any file in these directories for cleanup or removal, discard that finding during synthesis. Do not create a todo for it.
 </protected_artifacts>
 
-#### Step 2: Discover Available Review Agents
+#### Step 2: Discover and Select Review Agents
 
 <dynamic_agent_discovery>
 
-**IMPORTANT:** Review agents are discovered dynamically by finding all `4-code-review-*.md` files in the `agents/` directory. This ensures new agents are automatically included without manual updates.
+**IMPORTANT:** Review agents are discovered dynamically by finding all `4-code-review-*.md` files in the `agents/` directory. But NOT all agents should run on every PR. Select the most relevant 4-6 based on what changed.
 
 **Discovery Process:**
 
 1. List all `4-code-review-*.md` files in `agents/` directory
-2. Extract agent names (filename without `.md` extension)
-3. Build the list of agents to run
+2. Analyze the PR diff to classify what changed (see selection guide below)
+3. Select the 4-6 most relevant agents
+4. Announce selections with one-sentence justifications before launching
 
 </dynamic_agent_discovery>
 
-#### Step 3: Run Review Agents in Parallel
+<reviewer_selection_guide>
+
+**Analyze the PR diff and select reviewers based on what files changed:**
+
+| Agent | When to include | Skip when |
+|-------|----------------|-----------|
+| `4-code-review-architecture` | Structural changes, new services/modules, plugin changes | Cosmetic/copy changes, test-only PRs |
+| `4-code-review-code-simplicity` | Any non-trivial code change — **include by default** | Docs-only, config-only changes |
+| `4-code-review-corey-test` | PR adds/modifies tests, or adds features that should have tests | No test files touched and no new behavior added |
+| `4-code-review-pattern-recognition` | Multiple files with similar patterns, new abstractions, refactors | Single-file bugfixes |
+| `4-code-review-security-sentinel` | Auth, API endpoints, user input handling, env vars, secrets | Internal refactors with no external surface |
+| `4-code-review-performance-oracle` | DB queries, N+1 risk, batch processing, caching, loops | UI-only changes, docs |
+| `4-code-review-data-integrity` | Model changes, validations, scopes, DB schema | No model/migration changes |
+| `4-code-review-jim-git` | Multi-commit PRs, messy history, pre-merge review | Single clean commit |
+| `4-code-review-agent-native` | New user-facing features, new tools/endpoints | Internal refactors, backend-only |
+| `4-code-review-julik-frontend-races` | JavaScript, Stimulus controllers, Turbo, async UI | No JS/frontend changes |
+| `4-code-review-data-migration` | `db/migrate/*.rb` files, data backfills, enum changes | No migration files |
+| `4-code-review-deployment-verification` | Risky deploys: migrations, data transforms, config changes | Safe refactors, test-only PRs |
+
+**Quick classification by file patterns:**
+
+- **Ruby models/services/jobs** (`app/models/`, `app/services/`, `app/jobs/`) → architecture, simplicity, performance, corey-test, pattern-recognition
+- **Controllers/views** (`app/controllers/`, `app/views/`) → security, simplicity, agent-native
+- **JavaScript/Stimulus** (`app/javascript/`, `*.js`) → julik-frontend-races, simplicity
+- **Migrations** (`db/migrate/`) → data-integrity, data-migration, deployment-verification
+- **Tests** (`test/`) → corey-test, simplicity
+- **Plugin code** (`plugins/`) → architecture, pattern-recognition, simplicity
+- **Config/CI** (`.github/`, `config/`) → deployment-verification
+
+**Always include `code-simplicity`.** It applies to every PR.
+
+**Select 4-6 agents total.** This keeps reviews focused and avoids diluting signal with irrelevant findings.
+
+</reviewer_selection_guide>
+
+#### Step 3: Run Selected Review Agents in Parallel
 
 <parallel_tasks>
 
-**Run ALL discovered review agents in parallel.** The current agents matching `4-code-review-*.md` include:
+**Announce your selections**, then launch the selected agents in parallel. Example:
 
-- `4-code-review-agent-native` - Verify new features are agent-accessible
-- `4-code-review-architecture` - Architectural compliance and design review
-- `4-code-review-code-simplicity` - Final pass for simplicity and YAGNI
-- `4-code-review-corey-test` - Test suite quality and hourglass testing
-- `4-code-review-data-integrity` - Database and data integrity concerns
-- `4-code-review-jim-git` - Git history, commits, and collaboration story
-- `4-code-review-pattern-recognition` - Design patterns and anti-patterns
-- `4-code-review-performance-oracle` - Performance analysis and optimization
-- `4-code-review-security-sentinel` - Security audits and vulnerability assessment
-- `4-code-review-julik-frontend-races` - JavaScript/Stimulus race conditions
+> Running 5 code reviewers for this backend refactor:
+> - **code-simplicity** — always (YAGNI check)
+> - **architecture** — new plugin scoring modules across 9 plugins
+> - **pattern-recognition** — 9 plugins following same pattern, consistency matters
+> - **corey-test** — new delegation tests added
+> - **performance-oracle** — scoring runs in hot path with AI calls
 
-**Execution:**
-
-```
-# Launch all 4-code-review-* agents in parallel
-Task 4-code-review-agent-native(PR diff and context)
-Task 4-code-review-architecture(PR diff and context)
-Task 4-code-review-code-simplicity(PR diff and context)
-Task 4-code-review-corey-test(PR diff and test files)
-Task 4-code-review-data-integrity(PR diff and context)
-Task 4-code-review-jim-git(commit history and PR metadata)
-Task 4-code-review-pattern-recognition(PR diff and context)
-Task 4-code-review-performance-oracle(PR diff and context)
-Task 4-code-review-security-sentinel(PR diff and context)
-Task 4-code-review-julik-frontend-races(PR diff and context)
-```
+Do NOT run all agents. Only run the ones you selected in Step 2.
 
 </parallel_tasks>
-
-#### Conditional Agents (Run if applicable):
-
-<conditional_agents>
-
-These agents run ONLY when the PR matches specific criteria:
-
-**If PR contains database migrations or data changes:**
-
-Trigger conditions:
-- PR includes files matching `db/migrate/*.rb`
-- PR modifies columns that store IDs, enums, or mappings
-- PR includes data backfill scripts or rake tasks
-- PR title/body mentions: migration, backfill, data transformation
-
-Run these additional agents:
-- `4-code-review-data-migration` - Validates ID mappings match production, checks for swapped values, verifies rollback safety
-- `4-code-review-deployment-verification` - Creates Go/No-Go deployment checklist with SQL verification queries and rollback procedures
-
-</conditional_agents>
 
 ### 4. Ultra-Thinking Deep Dive Phases
 
