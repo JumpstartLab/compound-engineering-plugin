@@ -67,6 +67,7 @@ When adding or modifying skills, verify compliance with the skill spec:
 
 - [ ] `name:` present and matches directory name (lowercase-with-hyphens)
 - [ ] `description:` present and describes **what it does and when to use it** (per official spec: "Explains code with diagrams. Use when exploring how code works.")
+- [ ] `description:` value is quoted (single or double) if it contains colons -- unquoted colons break `js-yaml` strict parsing and crash `install --to opencode/codex`. Run `bun test tests/frontmatter.test.ts` to verify.
 
 ### Reference File Inclusion (Required if references/ exists)
 
