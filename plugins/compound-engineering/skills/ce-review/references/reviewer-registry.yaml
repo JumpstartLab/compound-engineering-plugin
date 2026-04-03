@@ -1,144 +1,27 @@
 # Reviewer Registry
 #
-# Single source of truth for which reviewers are available, how they're
-# categorized, and when they should be selected. The orchestrator reads
-# this file to decide which reviewers to spawn for a given diff.
-#
-# Reviewer .md files are not committed to this repo — they live in
-# external repos listed under `sources` below. Run /ce:refresh to
-# sync them into agents/review/.
+# Reviewer .md files live in external repos and are synced into
+# agents/review/ via /ce:refresh. Each reviewer's category and
+# selection criteria are defined in its own frontmatter — no need
+# to list individual reviewers here.
 #
 # To add a custom reviewer:
-#   1. Add the .md file to your reviewer repo
+#   1. Add the .md file to your reviewer repo (with category and
+#      select_when in frontmatter)
 #   2. Run /ce:refresh to pull it in
-#
-# Categories:
-#   always-on    — Spawned on every review regardless of diff content
-#   conditional  — Spawned when the orchestrator judges the diff touches relevant domains
-#   stack        — Like conditional, but scoped to a specific language/framework
-#   ce-always    — CE-specific agents spawned on every review (unstructured output)
-#   ce-conditional — CE-specific agents spawned for migration-related diffs
-
-reviewers:
-  # === Always-on (every review) ===
-  - name: correctness
-    agent: correctness-reviewer
-    category: always-on
-    focus: "Logic errors, edge cases, state bugs, error propagation, intent compliance"
-
-  - name: testing
-    agent: testing-reviewer
-    category: always-on
-    focus: "Coverage gaps, weak assertions, brittle tests, missing edge case tests"
-
-  - name: maintainability
-    agent: maintainability-reviewer
-    category: always-on
-    focus: "Coupling, complexity, naming, dead code, premature abstraction"
-
-  - name: project-standards
-    agent: project-standards-reviewer
-    category: always-on
-    focus: "CLAUDE.md and AGENTS.md compliance — frontmatter, references, naming, portability"
-
-  # === CE Always-on (unstructured output) ===
-  - name: agent-native
-    agent: agent-native-reviewer
-    category: ce-always
-    focus: "Verify new features are agent-accessible"
-
-  - name: learnings-researcher
-    agent: learnings-researcher
-    category: ce-always
-    focus: "Search docs/solutions/ for past issues related to this PR's modules and patterns"
-
-  # === Cross-cutting conditional ===
-  - name: security
-    agent: security-reviewer
-    category: conditional
-    select_when: "Auth middleware, public endpoints, user input handling, permission checks, secrets management"
-
-  - name: performance
-    agent: performance-reviewer
-    category: conditional
-    select_when: "Database queries, ORM calls, loop-heavy data transforms, caching layers, async/concurrent code"
-
-  - name: api-contract
-    agent: api-contract-reviewer
-    category: conditional
-    select_when: "Route definitions, serializer/interface changes, event schemas, exported type signatures, API versioning"
-
-  - name: data-migrations
-    agent: data-migrations-reviewer
-    category: conditional
-    select_when: "Migration files, schema changes, backfill scripts, data transformations"
-
-  - name: reliability
-    agent: reliability-reviewer
-    category: conditional
-    select_when: "Error handling, retry logic, circuit breakers, timeouts, background jobs, async handlers, health checks"
-
-  - name: adversarial
-    agent: adversarial-reviewer
-    category: conditional
-    select_when: "Diff has >=50 changed non-test, non-generated, non-lockfile lines, OR touches auth, payments, data mutations, external API integrations"
-
-  - name: cli-readiness
-    agent: cli-readiness-reviewer
-    category: conditional
-    select_when: "CLI command definitions, argument parsing, CLI framework usage, command handler implementations"
-
-  - name: previous-comments
-    agent: previous-comments-reviewer
-    category: conditional
-    select_when: "PR-only — reviewing a PR that has existing review comments or threads from prior rounds"
-
-  # === Stack-specific conditional ===
-  - name: dhh-rails
-    agent: dhh-rails-reviewer
-    category: stack
-    select_when: "Rails architecture, service objects, authentication/session choices, Hotwire-vs-SPA boundaries, or abstractions that may fight Rails conventions"
-
-  - name: kieran-rails
-    agent: kieran-rails-reviewer
-    category: stack
-    select_when: "Rails controllers, models, views, jobs, components, routes, or other application-layer Ruby code"
-
-  - name: kieran-python
-    agent: kieran-python-reviewer
-    category: stack
-    select_when: "Python modules, endpoints, services, scripts, or typed domain code"
-
-  - name: kieran-typescript
-    agent: kieran-typescript-reviewer
-    category: stack
-    select_when: "TypeScript components, services, hooks, utilities, or shared types"
-
-  - name: julik-frontend-races
-    agent: julik-frontend-races-reviewer
-    category: stack
-    select_when: "Stimulus/Turbo controllers, DOM event wiring, timers, async UI flows, animations, or frontend state transitions with race potential"
-
-  # === CE conditional (migration-specific) ===
-  - name: schema-drift-detector
-    agent: schema-drift-detector
-    category: ce-conditional
-    select_when: "Diff includes database migrations, schema.rb, or data backfills"
-
-  - name: deployment-verification
-    agent: deployment-verification-agent
-    category: ce-conditional
-    select_when: "Diff includes database migrations, schema.rb, or data backfills"
+#   3. The orchestrator reads frontmatter to decide when to spawn it
 
 # === External reviewer sources ===
-# Sync reviewer .md files from external repos via /ce:refresh-reviewers.
-# Files are fetched into agents/review/custom/ and auto-registered.
 #
-# sources:
-#   - name: my-reviewers            # A label for this source
-#     repo: username/repo-name      # GitHub owner/repo
-#     branch: main                  # Branch to fetch from (default: main)
-#     path: reviewers/              # Directory within the repo (default: root)
+# List repos that contain reviewer .md files. Sources listed first
+# have higher priority — if two sources have a file with the same
+# name, the first source wins.
+#
+# Fields:
+#   name    — A label for this source (used in status output)
+#   repo    — GitHub owner/repo
+#   branch  — Branch to fetch from (default: main)
+#   path    — Directory within the repo containing .md files (default: .)
 
 sources:
   - name: jsl-reviewers
@@ -150,12 +33,25 @@ sources:
     branch: main
     path: .
 
-# Selection rules (for the orchestrator):
+# === Selection rules ===
 #
-# 1. Always spawn all reviewers with category: always-on and ce-always
-# 2. For each conditional reviewer, read the diff and judge whether
-#    select_when criteria are relevant. This is agent judgment, not keyword matching.
-# 3. For stack-specific reviewers, use file types as a starting point but
-#    only spawn if the diff introduces meaningful work for that reviewer.
-# 4. Announce the selected team before spawning, with a one-line justification
-#    per conditional reviewer.
+# The orchestrator reads each reviewer's frontmatter to determine
+# category and select_when. Categories:
+#
+#   always-on      — Spawned on every review
+#   conditional    — Spawned when the orchestrator judges the diff
+#                    touches the reviewer's select_when domain
+#   stack          — Like conditional, scoped to a language/framework
+#   plan-review    — Spawned during plan reviews
+#   synthesis      — Spawned after other reviewers to merge findings
+#   ce-always      — CE-specific, every review (unstructured output)
+#   ce-conditional — CE-specific, migration-related diffs
+#
+# Rules:
+#   1. Always spawn all always-on and ce-always reviewers
+#   2. For conditional/stack reviewers, read the diff and judge whether
+#      select_when criteria are relevant (agent judgment, not keywords)
+#   3. For plan-review reviewers, spawn during plan review phases
+#   4. Spawn synthesis reviewers after all other reviewers complete
+#   5. Announce the selected team before spawning
+#   6. Skip files starting with underscore (_template-reviewer.md)

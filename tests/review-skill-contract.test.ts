@@ -161,16 +161,9 @@ describe("ce-review contract", () => {
       expect(content).toContain(agent)
     }
 
-    // Registry should list the agent file names (without the namespace prefix)
-    for (const agent of [
-      "dhh-rails-reviewer",
-      "kieran-rails-reviewer",
-      "kieran-python-reviewer",
-      "kieran-typescript-reviewer",
-      "julik-frontend-races-reviewer",
-    ]) {
-      expect(registry).toContain(agent)
-    }
+    // Registry should have sources configured for external reviewer repos
+    expect(registry).toContain("sources:")
+    expect(registry).toContain("repo:")
 
     expect(content).toContain("## Language-Aware Conditionals")
     expect(content).not.toContain("## Language-Agnostic")
