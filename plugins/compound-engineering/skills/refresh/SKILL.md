@@ -1,5 +1,5 @@
 ---
-name: ce:refresh-reviewers
+name: ce:refresh
 description: "Sync custom reviewer personas from external Git repos into the local plugin. Reads sources from reviewer-registry.yaml, fetches .md files, and drops them into agents/review/custom/. Use when you've updated your reviewer repo or want to pull in new reviewer personas."
 ---
 

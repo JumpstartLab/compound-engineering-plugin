@@ -10,7 +10,7 @@
 #   3. The orchestrator will automatically discover and use it
 #
 # To sync reviewers from an external repo, add a source below and run
-# /ce:refresh-reviewers. Files are fetched into agents/review/custom/.
+# /ce:refresh. Files are fetched into agents/review/custom/.
 #
 # Categories:
 #   always-on    — Spawned on every review regardless of diff content
