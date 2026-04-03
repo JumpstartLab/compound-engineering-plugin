@@ -38,6 +38,7 @@ Options:
   1, 2, ... — toggle a source on/off
   a         — add a new source
   d 1       — delete source 1
+  e         — open config in editor
 ```
 
 Wait for the user's response using AskUserQuestion:
@@ -45,6 +46,7 @@ Wait for the user's response using AskUserQuestion:
 - **Number(s)** — toggle those sources: comment out (prefix `# ` to every line of that source entry) or uncomment. Write the updated YAML back to the file. Then present the list again.
 - **"a"** — ask for: repo (required, format `owner/repo`), branch (default: main), name (default: derived from repo). Add the new source entry to the YAML at the TOP of the sources list (highest priority). Then present the list again.
 - **"d N"** — remove source N from the YAML entirely. Then present the list again.
+- **"e"** — open `~/.config/compound-engineering/reviewer-sources.yaml` in the user's editor. Run `${EDITOR:-vim} ~/.config/compound-engineering/reviewer-sources.yaml` via Bash, then re-read the file and present the updated list.
 
 Keep looping until the user presses Enter to proceed.
 
