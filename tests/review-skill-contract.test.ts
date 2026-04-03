@@ -296,3 +296,26 @@ describe("testing-reviewer contract", () => {
     expect(content).toContain("Non-behavioral changes")
   })
 })
+
+describe("template-reviewer contract", () => {
+  test("template reviewer ships with required structure", async () => {
+    const content = await readRepoFile(
+      "plugins/compound-engineering/agents/review/_template-reviewer.md",
+    )
+    const parsed = parseFrontmatter(content)
+
+    // Frontmatter has required fields
+    expect(parsed.data.name).toBe("template-reviewer")
+    expect(String(parsed.data.tools)).toContain("Read")
+    expect(String(parsed.data.tools)).toContain("Grep")
+    expect(String(parsed.data.tools)).toContain("Glob")
+    expect(String(parsed.data.tools)).toContain("Bash")
+
+    // Body has required sections
+    expect(content).toContain("## What you're hunting for")
+    expect(content).toContain("## Confidence calibration")
+    expect(content).toContain("## What you don't flag")
+    expect(content).toContain("## Output format")
+    expect(content).toContain("Return your findings as JSON matching the findings schema.")
+  })
+})
