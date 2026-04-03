@@ -9,7 +9,7 @@ Syncs reviewer persona files from external Git repositories into the plugin's `a
 
 ## Execution
 
-Run the sync script:
+Run the sync script and **show the full output to the user verbatim** — do not summarize or paraphrase it. The script produces a detailed summary report that the user wants to see in full.
 
 ```bash
 bash plugins/compound-engineering/skills/refresh/sync-reviewers.sh \
@@ -17,7 +17,7 @@ bash plugins/compound-engineering/skills/refresh/sync-reviewers.sh \
   plugins/compound-engineering/agents/review
 ```
 
-The script handles everything: reading sources from the registry, fetching files via `gh` (with `git` fallback), filtering by `except` lists, resolving conflicts (first source wins), and reporting results.
+After the script completes, output its full results directly. Do not rewrite, condense, or interpret the output.
 
 ## Source Configuration
 
