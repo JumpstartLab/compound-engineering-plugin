@@ -20,8 +20,13 @@ Reviewer personas are registered in [`reviewer-registry.yaml`](./reviewer-regist
 4. **For `ce-conditional` reviewers**, spawn when the diff includes migration files (`db/migrate/*.rb`, `db/schema.rb`) or data backfill scripts.
 5. **Announce the team** before spawning with a one-line justification per conditional reviewer selected.
 
+## Setup
+
+Reviewer `.md` files are not committed to the plugin repo. They live in external repos configured under `sources` in `reviewer-registry.yaml`. Run `/ce:refresh` to sync them into `agents/review/`.
+
 ## Adding a custom reviewer
 
-1. Create a new `.md` file in `agents/review/` following the existing persona format (see any reviewer file for the template — frontmatter with name/description/model/tools, then the persona prompt with hunting targets, confidence calibration, suppression rules, and output format).
+1. Add a new `.md` file to your reviewer repo following the persona format (frontmatter with name/description/model/tools, then the prompt body with hunting targets, confidence calibration, suppression rules, and output format).
 2. Add an entry to `reviewer-registry.yaml` with the appropriate category and selection criteria.
-3. The orchestrator will automatically discover and use the new reviewer.
+3. Run `/ce:refresh` to pull it in.
+4. The orchestrator will automatically discover and use the new reviewer.

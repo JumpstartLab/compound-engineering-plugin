@@ -1,17 +1,17 @@
 ---
 name: ce:refresh
-description: "Sync custom reviewer personas from external Git repos into the local plugin. Reads sources from reviewer-registry.yaml, fetches .md files, and drops them into agents/review/custom/. Use when you've updated your reviewer repo or want to pull in new reviewer personas."
+description: "Sync reviewer personas from external Git repos into the local plugin. Reads sources from reviewer-registry.yaml, fetches .md files, and places them in agents/review/. Use when setting up the plugin for the first time, after updating your reviewer repo, or to pull in new reviewer personas."
 ---
 
 # Refresh Reviewers
 
-Syncs custom reviewer persona files from external Git repositories into the local plugin's `agents/review/custom/` directory.
+Syncs reviewer persona files from external Git repositories into the plugin's `agents/review/` directory. Reviewer files are not committed to the plugin repo — they live in external repos and are fetched on demand.
 
 ## How It Works
 
 1. Read `sources` from `plugins/compound-engineering/skills/ce-review/references/reviewer-registry.yaml`
 2. For each source, fetch `.md` files from the specified repo, branch, and path
-3. Place them in `plugins/compound-engineering/agents/review/custom/`
+3. Place them in `plugins/compound-engineering/agents/review/`
 4. Report what was added, updated, or unchanged
 
 ## Fetching Strategy
@@ -34,7 +34,7 @@ gh api repos/{source.repo}/contents/{source.path} \
 gh api repos/{source.repo}/contents/{source.path}/{filename} \
   --jq '.content' \
   -H "Accept: application/vnd.github.v3+json" \
-  -f ref={source.branch} | base64 -d > agents/review/custom/{filename}
+  -f ref={source.branch} | base64 -d > agents/review/{filename}
 ```
 
 ### Without `gh` (git fallback):
@@ -46,7 +46,7 @@ git clone --depth 1 --branch {source.branch} \
   https://github.com/{source.repo}.git "$tmp" 2>/dev/null
 
 # Copy .md files from the source path
-cp "$tmp"/{source.path}/*.md agents/review/custom/
+cp "$tmp"/{source.path}/*.md agents/review/
 
 # Clean up
 rm -rf "$tmp"
@@ -74,20 +74,20 @@ sources:
 ## Execution
 
 1. **Read the registry** at the path shown above. Parse the YAML and extract the `sources` array.
-2. **If sources is empty or missing**, report "No external reviewer sources configured" and explain how to add one.
+2. **If sources is empty or missing**, report "No external reviewer sources configured" and explain how to add one to `reviewer-registry.yaml`.
 3. **For each source**:
    a. Announce: "Syncing from {name} ({repo}@{branch}:{path})..."
    b. Determine if `gh` is available (`which gh`). Use `gh` if present, `git clone` otherwise.
-   c. Fetch all `.md` files from the source path.
-   d. For each file, compare with any existing file in `custom/`:
+   c. Fetch all `.md` files from the source path (skip README.md).
+   d. For each file, compare with any existing file in `agents/review/`:
       - New file → copy and report "Added: {filename}"
       - Changed file → overwrite and report "Updated: {filename}"
       - Unchanged → report "Unchanged: {filename}"
-   e. Report files in `custom/` that came from this source but are no longer in the remote (don't auto-delete — just warn).
+   e. Report files in `agents/review/` that are not present in any configured source (don't auto-delete — just warn about orphans).
 4. **Summary**: "Synced {n} reviewers from {m} sources. {added} added, {updated} updated, {unchanged} unchanged."
 
 ## Error Handling
 
 - If a source repo doesn't exist or the branch is wrong, report the error and continue to the next source.
 - If neither `gh` nor `git` is available, stop with a clear error message.
-- Never delete files from `custom/` automatically — only warn about orphans.
+- Never delete files from `agents/review/` automatically — only warn about orphans.

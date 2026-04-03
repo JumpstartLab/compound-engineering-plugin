@@ -4,13 +4,13 @@
 # categorized, and when they should be selected. The orchestrator reads
 # this file to decide which reviewers to spawn for a given diff.
 #
-# To add a custom reviewer:
-#   1. Create a new .md file in agents/review/ following the persona template
-#   2. Add an entry here with the appropriate category and selection criteria
-#   3. The orchestrator will automatically discover and use it
+# Reviewer .md files are not committed to this repo — they live in
+# external repos listed under `sources` below. Run /ce:refresh to
+# sync them into agents/review/.
 #
-# To sync reviewers from an external repo, add a source below and run
-# /ce:refresh. Files are fetched into agents/review/custom/.
+# To add a custom reviewer:
+#   1. Add the .md file to your reviewer repo
+#   2. Run /ce:refresh to pull it in
 #
 # Categories:
 #   always-on    — Spawned on every review regardless of diff content

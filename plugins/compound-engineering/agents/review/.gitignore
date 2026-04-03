@@ -1,0 +1,3 @@
+# Reviewer persona files are synced from external repos via /ce:refresh
+# They should not be committed to this plugin repo
+*.md

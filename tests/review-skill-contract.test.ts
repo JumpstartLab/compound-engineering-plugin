@@ -1,10 +1,19 @@
-import { readFile } from "fs/promises"
+import { readFile, access } from "fs/promises"
 import path from "path"
 import { describe, expect, test } from "bun:test"
 import { parseFrontmatter } from "../src/utils/frontmatter"
 
 async function readRepoFile(relativePath: string): Promise<string> {
   return readFile(path.join(process.cwd(), relativePath), "utf8")
+}
+
+async function fileExists(relativePath: string): Promise<boolean> {
+  try {
+    await access(path.join(process.cwd(), relativePath))
+    return true
+  } catch {
+    return false
+  }
 }
 
 describe("ce-review contract", () => {
@@ -168,6 +177,13 @@ describe("ce-review contract", () => {
   })
 
   test("stack-specific reviewer agents follow the structured findings contract", async () => {
+    // Reviewer files live in external repos — skip if not synced via /ce:refresh
+    const sampleFile = "plugins/compound-engineering/agents/review/dhh-rails-reviewer.md"
+    if (!(await fileExists(sampleFile))) {
+      console.log("  ⊘ Skipped: reviewer files not present (run /ce:refresh to sync)")
+      return
+    }
+
     const reviewers = [
       {
         path: "plugins/compound-engineering/agents/review/dhh-rails-reviewer.md",
@@ -209,9 +225,13 @@ describe("ce-review contract", () => {
   })
 
   test("leaves data-migration-expert as the unstructured review format", async () => {
-    const content = await readRepoFile(
-      "plugins/compound-engineering/agents/review/data-migration-expert.md",
-    )
+    const filePath = "plugins/compound-engineering/agents/review/data-migration-expert.md"
+    if (!(await fileExists(filePath))) {
+      console.log("  ⊘ Skipped: reviewer files not present (run /ce:refresh to sync)")
+      return
+    }
+
+    const content = await readRepoFile(filePath)
 
     expect(content).toContain("## Reviewer Checklist")
     expect(content).toContain("Refuse approval until there is a written verification + rollback plan.")
@@ -258,7 +278,13 @@ describe("ce-review contract", () => {
 
 describe("testing-reviewer contract", () => {
   test("includes behavioral-changes-with-no-test-additions check", async () => {
-    const content = await readRepoFile("plugins/compound-engineering/agents/review/testing-reviewer.md")
+    const filePath = "plugins/compound-engineering/agents/review/testing-reviewer.md"
+    if (!(await fileExists(filePath))) {
+      console.log("  ⊘ Skipped: reviewer files not present (run /ce:refresh to sync)")
+      return
+    }
+
+    const content = await readRepoFile(filePath)
 
     // New check exists in "What you're hunting for" section
     expect(content).toContain("Behavioral changes with no test additions")
