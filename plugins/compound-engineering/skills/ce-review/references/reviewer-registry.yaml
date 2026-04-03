@@ -142,7 +142,7 @@ reviewers:
 
 sources:
   - name: jsl-reviewers
-    repo: JumpstartLab/ce-reviewers-test
+    repo: JumpstartLab/ce-reviewers-jsl
     branch: main
     path: .
   - name: ce-default
