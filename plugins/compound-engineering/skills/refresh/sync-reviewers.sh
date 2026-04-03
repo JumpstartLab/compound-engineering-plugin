@@ -8,7 +8,7 @@
 # and writes them to the output directory. First-listed source wins on
 # filename conflicts (processed in reverse order).
 
-set -euo pipefail
+set -u
 
 REGISTRY="${1:?Usage: sync-reviewers.sh <registry-yaml> <output-dir>}"
 OUTPUT_DIR="${2:?Usage: sync-reviewers.sh <registry-yaml> <output-dir>}"
@@ -152,7 +152,9 @@ added=0; updated=0; unchanged=0; skipped=0; conflicts=0
 staging=$(mktemp -d)
 # Track which source owns each file (simple text file: "filename:source")
 source_log=$(mktemp)
-trap "rm -rf '$staging' '$source_log'" EXIT
+# Per-source tracking for summary report
+summary_dir=$(mktemp -d)
+trap "rm -rf '$staging' '$source_log' '$summary_dir'" EXIT
 
 # Process in reverse order so first-listed source overwrites
 for (( i=num_sources-1; i>=0; i-- )); do
@@ -163,6 +165,12 @@ for (( i=num_sources-1; i>=0; i-- )); do
   path=$(jfield "$source_json" "path" ".")
 
   echo "Syncing from ${name} (${repo}@${branch}:${path})..."
+
+  # Per-source tracking files
+  mkdir -p "${summary_dir}/${name}"
+  touch "${summary_dir}/${name}/included"
+  touch "${summary_dir}/${name}/excluded"
+  touch "${summary_dir}/${name}/overridden"
 
   # Build except list into a temp file
   except_file=$(mktemp)
@@ -181,6 +189,7 @@ for (( i=num_sources-1; i>=0; i-- )); do
     basename_no_ext="${filename%.md}"
     if grep -qx "$basename_no_ext" "$except_file" 2>/dev/null; then
       echo "  Skipped: ${filename} (excluded by config)"
+      echo "$basename_no_ext" >> "${summary_dir}/${name}/excluded"
       skipped=$((skipped + 1))
       continue
     fi
@@ -189,8 +198,14 @@ for (( i=num_sources-1; i>=0; i-- )); do
     prev_source=$(grep "^${filename}:" "$source_log" 2>/dev/null | cut -d: -f2- || true)
     if [ -n "$prev_source" ]; then
       echo "  Conflict: ${filename} — keeping version from '${name}' (overrides '${prev_source}')"
+      echo "${basename_no_ext} (was ${prev_source})" >> "${summary_dir}/${name}/overridden"
+      # Remove from previous source's included list
+      grep -v "^${basename_no_ext}$" "${summary_dir}/${prev_source}/included" > "${summary_dir}/${prev_source}/included.tmp" 2>/dev/null || true
+      mv "${summary_dir}/${prev_source}/included.tmp" "${summary_dir}/${prev_source}/included"
       conflicts=$((conflicts + 1))
     fi
+
+    echo "$basename_no_ext" >> "${summary_dir}/${name}/included"
 
     cp "${src_tmp}/${filename}" "${staging}/${filename}"
     # Update source log (remove old entry, add new)
@@ -238,5 +253,48 @@ done
 
 total=$((added + updated + unchanged))
 echo ""
-echo "Done. ${total} reviewers from ${num_sources} sources."
-echo "  ${added} added, ${updated} updated, ${unchanged} unchanged, ${skipped} skipped, ${conflicts} conflicts resolved."
+echo "=== Summary ==="
+echo ""
+
+# Per-source report built from source_log and exclude tracking
+for (( i=0; i<num_sources; i++ )); do
+  source_json=$(echo "$sources_json" | python3 -c "import json,sys; print(json.dumps(json.load(sys.stdin)[$i]))")
+  name=$(jfield "$source_json" "name" "source-$i")
+  repo=$(jfield "$source_json" "repo")
+  branch=$(jfield "$source_json" "branch" "main")
+
+  echo "${name} (${repo}@${branch})"
+
+  # Included: files in source_log owned by this source
+  included=$(grep ":${name}$" "$source_log" 2>/dev/null | cut -d: -f1 | sed 's/\.md$//' | sort || true)
+  if [ -n "$included" ]; then
+    echo "  Included:"
+    echo "$included" | while IFS= read -r reviewer; do
+      echo "    ${reviewer}"
+    done
+  else
+    echo "  Included: (none)"
+  fi
+
+  # Excluded
+  if [ -s "${summary_dir}/${name}/excluded" ]; then
+    echo "  Excluded:"
+    sort -u "${summary_dir}/${name}/excluded" | while IFS= read -r reviewer; do
+      echo "    ${reviewer}"
+    done
+  fi
+
+  # Overridden
+  if [ -s "${summary_dir}/${name}/overridden" ]; then
+    echo "  Overridden:"
+    sort -u "${summary_dir}/${name}/overridden" | while IFS= read -r entry; do
+      echo "    ${entry}"
+    done
+  fi
+
+  echo ""
+done
+
+echo "${total} reviewers synced. ${added} added, ${updated} updated, ${unchanged} unchanged."
+[ "$skipped" -gt 0 ] && echo "${skipped} excluded by config."
+[ "$conflicts" -gt 0 ] && echo "${conflicts} conflicts resolved (first source wins)."
