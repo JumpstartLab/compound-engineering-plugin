@@ -25,10 +25,6 @@
 #   except  — List of reviewer filenames (without .md) to skip from this source
 
 sources:
-  - name: jsl-reviewers
-    repo: JumpstartLab/ce-reviewers-jsl
-    branch: main
-    path: .
   - name: ce-default
     repo: JumpstartLab/ce-reviewers
     branch: main
