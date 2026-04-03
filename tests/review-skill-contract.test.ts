@@ -138,8 +138,8 @@ describe("ce-review contract", () => {
 
   test("documents stack-specific conditional reviewers for the JSON pipeline", async () => {
     const content = await readRepoFile("plugins/compound-engineering/skills/ce-review/SKILL.md")
-    const catalog = await readRepoFile(
-      "plugins/compound-engineering/skills/ce-review/references/persona-catalog.md",
+    const registry = await readRepoFile(
+      "plugins/compound-engineering/skills/ce-review/references/reviewer-registry.yaml",
     )
 
     for (const agent of [
@@ -150,7 +150,17 @@ describe("ce-review contract", () => {
       "compound-engineering:review:julik-frontend-races-reviewer",
     ]) {
       expect(content).toContain(agent)
-      expect(catalog).toContain(agent)
+    }
+
+    // Registry should list the agent file names (without the namespace prefix)
+    for (const agent of [
+      "dhh-rails-reviewer",
+      "kieran-rails-reviewer",
+      "kieran-python-reviewer",
+      "kieran-typescript-reviewer",
+      "julik-frontend-races-reviewer",
+    ]) {
+      expect(registry).toContain(agent)
     }
 
     expect(content).toContain("## Language-Aware Conditionals")
