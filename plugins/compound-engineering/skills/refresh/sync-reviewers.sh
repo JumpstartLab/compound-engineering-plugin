@@ -228,7 +228,7 @@ for (( i=num_sources-1; i>=0; i-- )); do
 
   # Fetch files
   src_tmp=$(mktemp -d)
-  fetched_files=$(fetch_files "$repo" "$branch" "$path" "$src_tmp" 2>&1) || {
+  fetched_files=$(fetch_files "$repo" "$branch" "$path" "$src_tmp") || {
     echo "  Failed to fetch from ${name}. Continuing."
     rm -rf "$src_tmp" "$except_file"
     continue
