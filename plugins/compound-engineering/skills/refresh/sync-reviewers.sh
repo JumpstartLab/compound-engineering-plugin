@@ -37,6 +37,7 @@ if [ ! -f "$USER_CONFIG" ]; then
 #    path: .
 #    except:
 #      - reviewer-to-skip
+#      - another-reviewer-to-skip
 
 YAML
   # Append the sources from the default registry
