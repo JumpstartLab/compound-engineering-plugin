@@ -22,6 +22,7 @@
 #   repo    — GitHub owner/repo
 #   branch  — Branch to fetch from (default: main)
 #   path    — Directory within the repo containing .md files (default: .)
+#   except  — List of reviewer filenames (without .md) to skip from this source
 
 sources:
   - name: jsl-reviewers

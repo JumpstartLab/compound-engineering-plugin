@@ -62,6 +62,14 @@ sources:
     repo: username/repo-name
     branch: main
     path: reviewers/
+
+  - name: community-reviewers
+    repo: SomeOrg/ce-reviewers
+    branch: main
+    path: .
+    except:
+      - kieran-python-reviewer
+      - kieran-typescript-reviewer
 ```
 
 | Field | Required | Default | Description |
@@ -70,6 +78,7 @@ sources:
 | `repo` | yes | — | GitHub owner/repo (e.g., `JumpstartLab/ce-reviewers`) |
 | `branch` | no | `main` | Branch to fetch from |
 | `path` | no | `.` | Directory within the repo containing reviewer `.md` files |
+| `except` | no | `[]` | List of reviewer filenames (without `.md`) to skip from this source |
 
 ## Conflict Resolution
 
@@ -87,7 +96,8 @@ When a conflict is detected, warn: "Conflict: {filename} — keeping version fro
    a. Announce: "Syncing from {name} ({repo}@{branch}:{path})..."
    b. Determine if `gh` is available (`which gh`). Use `gh` if present, `git clone` otherwise.
    c. Fetch all `.md` files from the source path (skip README.md).
-   d. For each file, compare with any existing file in `agents/review/`:
+   d. If the source has an `except` list, skip any file whose name (without `.md`) matches an entry. Report: "Skipped: {filename} (excluded by config)"
+   e. For each remaining file, compare with any existing file in `agents/review/`:
       - New file → copy and report "Added: {filename}"
       - Changed file → overwrite and report "Updated: {filename}"
       - Unchanged → report "Unchanged: {filename}"
