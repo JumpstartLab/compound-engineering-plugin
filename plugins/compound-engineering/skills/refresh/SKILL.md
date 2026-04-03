@@ -21,7 +21,7 @@ If that fails (e.g., running from the plugin source repo), fall back to the rela
 PLUGIN_DIR="${PLUGIN_DIR:-plugins/compound-engineering}"
 ```
 
-Then run the sync script and **show the full output to the user verbatim** — do not summarize or paraphrase it. The script produces a detailed summary report that the user wants to see in full.
+Then run the sync script:
 
 ```bash
 bash "$PLUGIN_DIR/skills/refresh/sync-reviewers.sh" \
@@ -29,7 +29,7 @@ bash "$PLUGIN_DIR/skills/refresh/sync-reviewers.sh" \
   "$PLUGIN_DIR/agents/review"
 ```
 
-After the script completes, output its full results directly. Do not rewrite, condense, or interpret the output.
+After the script completes, it writes a detailed summary to `~/.config/compound-engineering/last-refresh-summary.md`. Read that file and **output its contents to the user exactly as written**. The summary is already formatted as markdown — do not summarize, paraphrase, or reformat it. Just show it.
 
 ## Source Configuration
 

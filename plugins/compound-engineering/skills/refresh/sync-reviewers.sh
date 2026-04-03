@@ -296,8 +296,12 @@ for filepath in "$OUTPUT_DIR"/*.md; do
 done
 
 total=$((added + updated + unchanged))
-echo ""
-echo "=== Summary ==="
+
+# Write summary to a file that Claude can Read and show verbatim
+SUMMARY_FILE="${USER_CONFIG_DIR}/last-refresh-summary.md"
+
+{
+echo "# Reviewer Refresh Summary"
 echo ""
 
 # Per-source report built from source_log and exclude tracking
@@ -307,39 +311,46 @@ for (( i=0; i<num_sources; i++ )); do
   repo=$(jfield "$source_json" "repo")
   branch=$(jfield "$source_json" "branch" "main")
 
-  echo "${name} (${repo}@${branch})"
+  echo "## ${name} (${repo}@${branch})"
+  echo ""
 
   # Included: files in source_log owned by this source
   included=$(grep ":${name}$" "$source_log" 2>/dev/null | cut -d: -f1 | sed 's/\.md$//' | sort || true)
   if [ -n "$included" ]; then
-    echo "  Included:"
+    echo "**Included:**"
     echo "$included" | while IFS= read -r reviewer; do
-      echo "    ${reviewer}"
+      echo "- ${reviewer}"
     done
   else
-    echo "  Included: (none)"
+    echo "**Included:** (none)"
   fi
 
   # Excluded
   if [ -s "${summary_dir}/${name}/excluded" ]; then
-    echo "  Excluded:"
+    echo ""
+    echo "**Excluded:**"
     sort -u "${summary_dir}/${name}/excluded" | while IFS= read -r reviewer; do
-      echo "    ${reviewer}"
+      echo "- ${reviewer}"
     done
   fi
 
   # Overridden
   if [ -s "${summary_dir}/${name}/overridden" ]; then
-    echo "  Overridden:"
+    echo ""
+    echo "**Overridden:**"
     sort -u "${summary_dir}/${name}/overridden" | while IFS= read -r entry; do
-      echo "    ${entry}"
+      echo "- ${entry}"
     done
   fi
 
   echo ""
 done
 
-echo "${total} reviewers synced. ${added} added, ${updated} updated, ${unchanged} unchanged."
+echo "---"
+echo "**${total} reviewers synced.** ${added} added, ${updated} updated, ${unchanged} unchanged."
 [ "$skipped" -gt 0 ] && echo "${skipped} excluded by config."
 [ "$conflicts" -gt 0 ] && echo "${conflicts} conflicts resolved (first source wins)."
+} > "$SUMMARY_FILE"
+
+echo "Sync complete. Summary written to ${SUMMARY_FILE}"
 exit 0
