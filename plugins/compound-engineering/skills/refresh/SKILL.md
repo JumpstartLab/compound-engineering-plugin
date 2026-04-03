@@ -27,28 +27,26 @@ Read the user's source config at `~/.config/compound-engineering/reviewer-source
 
 If the file exists, parse it and present the current sources to the user like this:
 
+Present the options using AskUserQuestion with these exact choices. Use the source names and repos to build the list dynamically:
+
 ```
-Current reviewer sources:
-
-1. [✓] source-name (owner/repo@branch)
-2. [✓] source-name (owner/repo@branch)
-
-Options:
-  Enter     — sync with current sources
-  1, 2, ... — toggle a source on/off
-  a         — add a new source
-  d 1       — delete source 1
-  e         — open config in editor
+1. Sync now
+2. Toggle [source-name] ([owner/repo]) on/off
+3. Toggle [source-name] ([owner/repo]) on/off
+... (one per source)
+N. Add a new source
+N+1. Edit config file
 ```
 
-Wait for the user's response using AskUserQuestion:
-- **Enter / empty** — proceed to sync with current sources
-- **Number(s)** — toggle those sources: comment out (prefix `# ` to every line of that source entry) or uncomment. Write the updated YAML back to the file. Then present the list again.
-- **"a"** — ask for: repo (required, format `owner/repo`), branch (default: main), name (default: derived from repo). Add the new source entry to the YAML at the TOP of the sources list (highest priority). Then present the list again.
-- **"d N"** — remove source N from the YAML entirely. Then present the list again.
-- **"e"** — open `~/.config/compound-engineering/reviewer-sources.yaml` in the user's editor. Try `code` (VS Code) first, then fall back to `$EDITOR`, then `nano`. Run via Bash: `${EDITOR:-$(command -v code 2>/dev/null || echo nano)} ~/.config/compound-engineering/reviewer-sources.yaml`. After the editor closes (or opens in the background for VS Code), re-read the file and present the updated list.
+For toggled-off sources (commented out in YAML), show "[OFF]" in the toggle label.
 
-Keep looping until the user presses Enter to proceed.
+Handle the user's choice:
+- **Sync now** — proceed to Step 3
+- **Toggle** — comment out (prefix `# ` to every line of that source entry) or uncomment in the YAML. Write the file. Present the list again.
+- **Add a new source** — ask for: repo (required, format `owner/repo`), branch (default: main), name (default: derived from repo). Add the entry at the TOP of the sources list (highest priority). Present the list again.
+- **Edit config file** — open `~/.config/compound-engineering/reviewer-sources.yaml` in the user's editor. Try `code` (VS Code) first, then fall back to `$EDITOR`, then `nano`. Run via Bash: `${EDITOR:-$(command -v code 2>/dev/null || echo nano)} ~/.config/compound-engineering/reviewer-sources.yaml`. Re-read the file and present the list again.
+
+Keep looping until the user chooses "Sync now".
 
 ## Step 3: Sync
 
