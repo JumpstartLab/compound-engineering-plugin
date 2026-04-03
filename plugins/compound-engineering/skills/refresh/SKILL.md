@@ -7,21 +7,50 @@ description: "Sync reviewer personas from external Git repos into the local plug
 
 Syncs reviewer persona files from external Git repositories into the plugin's `agents/review/` directory.
 
-## Execution
+## Step 1: Locate plugin
 
-First, find the plugin's install location. It lives in the Claude plugin cache:
+Find the plugin's install location in the Claude plugin cache:
 
 ```bash
 PLUGIN_DIR=$(find "$HOME/.claude" "$HOME/.claude-"* -path "*/compound-engineering/*/agents/review" -type d 2>/dev/null | head -1 | sed 's|/agents/review$||')
 ```
 
-If that fails (e.g., running from the plugin source repo), fall back to the relative path:
+Fall back to relative path if not found (e.g., running from source repo):
 
 ```bash
 PLUGIN_DIR="${PLUGIN_DIR:-plugins/compound-engineering}"
 ```
 
-Then run the sync script:
+## Step 2: Interactive source configuration
+
+Read the user's source config at `~/.config/compound-engineering/reviewer-sources.yaml`. If it doesn't exist, the sync script will create it on first run — skip this step and go directly to Step 3.
+
+If the file exists, parse it and present the current sources to the user like this:
+
+```
+Current reviewer sources:
+
+1. [✓] source-name (owner/repo@branch)
+2. [✓] source-name (owner/repo@branch)
+
+Options:
+  Enter     — sync with current sources
+  1, 2, ... — toggle a source on/off
+  a         — add a new source
+  d 1       — delete source 1
+```
+
+Wait for the user's response using AskUserQuestion:
+- **Enter / empty** — proceed to sync with current sources
+- **Number(s)** — toggle those sources: comment out (prefix `# ` to every line of that source entry) or uncomment. Write the updated YAML back to the file. Then present the list again.
+- **"a"** — ask for: repo (required, format `owner/repo`), branch (default: main), name (default: derived from repo). Add the new source entry to the YAML at the TOP of the sources list (highest priority). Then present the list again.
+- **"d N"** — remove source N from the YAML entirely. Then present the list again.
+
+Keep looping until the user presses Enter to proceed.
+
+## Step 3: Sync
+
+Run the sync script:
 
 ```bash
 bash "$PLUGIN_DIR/skills/refresh/sync-reviewers.sh" \
@@ -29,11 +58,11 @@ bash "$PLUGIN_DIR/skills/refresh/sync-reviewers.sh" \
   "$PLUGIN_DIR/agents/review"
 ```
 
-After the script completes, it writes a detailed summary to `~/.config/compound-engineering/last-refresh-summary.md`. Read that file and **output its contents to the user exactly as written**. The summary is already formatted as markdown — do not summarize, paraphrase, or reformat it. Just show it.
+## Step 4: Show results
 
-## Source Configuration
+The script writes a summary to `~/.config/compound-engineering/last-refresh-summary.md`. Read that file and **output its contents to the user exactly as written**. The summary is already formatted as markdown — do not summarize, paraphrase, or reformat it. Just show it.
 
-Sources are defined in `reviewer-registry.yaml`:
+## Source YAML Format
 
 ```yaml
 sources:
@@ -46,7 +75,6 @@ sources:
     repo: SomeOrg/ce-reviewers
     except:
       - kieran-python-reviewer
-      - kieran-typescript-reviewer
 ```
 
 | Field | Required | Default | Description |
@@ -64,4 +92,4 @@ Sources listed first have higher priority. If two sources have a file with the s
 ## Requirements
 
 - `gh` CLI (preferred) or `git` for fetching
-- `python3` or `yq` for YAML parsing
+- `python3` for YAML parsing
