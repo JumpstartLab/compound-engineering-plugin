@@ -28,7 +28,7 @@ sources:
   - name: ce-default
     repo: JumpstartLab/ce-reviewers
     branch: main
-    path: .
+    path: reviewers
 
 # === Selection rules ===
 #
