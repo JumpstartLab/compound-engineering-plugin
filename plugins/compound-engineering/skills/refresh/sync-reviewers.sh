@@ -27,11 +27,11 @@ if [ ! -f "$USER_CONFIG" ]; then
 # Run /ce:refresh to sync reviewers after editing this file.
 #
 # Fields:
-#   name    — Label for this source
-#   repo    — GitHub owner/repo
-#   branch  — Branch to fetch from (default: main)
-#   path    — Directory containing .md files (default: .)
-#   except  — List of reviewer filenames (without .md) to skip
+#   name   - Label for this source
+#   repo   - GitHub owner/repo
+#   branch - Branch to fetch from (default: main)
+#   path   - Directory containing .md files (default: .)
+#   except - List of reviewer filenames (without .md) to skip
 #
 # Sources listed first have higher priority. If two sources have
 # a file with the same name, the first source's version is kept.
