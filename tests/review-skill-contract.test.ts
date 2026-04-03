@@ -205,7 +205,8 @@ describe("ce-review contract", () => {
       const parsed = parseFrontmatter(content)
       const tools = String(parsed.data.tools ?? "")
 
-      expect(String(parsed.data.description)).toContain("Conditional code-review persona")
+      // Category is now a dedicated frontmatter field, not embedded in description
+      expect(["conditional", "stack"]).toContain(String(parsed.data.category))
       expect(tools).toContain("Read")
       expect(tools).toContain("Grep")
       expect(tools).toContain("Glob")
