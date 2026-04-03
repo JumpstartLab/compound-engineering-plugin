@@ -1,0 +1,3 @@
+# Custom reviewer files are synced from external repos via /ce:refresh-reviewers
+# They should not be committed to this plugin repo
+*.md

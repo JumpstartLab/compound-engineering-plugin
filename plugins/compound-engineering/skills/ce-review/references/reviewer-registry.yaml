@@ -9,6 +9,9 @@
 #   2. Add an entry here with the appropriate category and selection criteria
 #   3. The orchestrator will automatically discover and use it
 #
+# To sync reviewers from an external repo, add a source below and run
+# /ce:refresh-reviewers. Files are fetched into agents/review/custom/.
+#
 # Categories:
 #   always-on    — Spawned on every review regardless of diff content
 #   conditional  — Spawned when the orchestrator judges the diff touches relevant domains
@@ -126,6 +129,18 @@ reviewers:
     agent: deployment-verification-agent
     category: ce-conditional
     select_when: "Diff includes database migrations, schema.rb, or data backfills"
+
+# === External reviewer sources ===
+# Sync reviewer .md files from external repos via /ce:refresh-reviewers.
+# Files are fetched into agents/review/custom/ and auto-registered.
+#
+# sources:
+#   - name: my-reviewers            # A label for this source
+#     repo: username/repo-name      # GitHub owner/repo
+#     branch: main                  # Branch to fetch from (default: main)
+#     path: reviewers/              # Directory within the repo (default: root)
+
+sources: []
 
 # Selection rules (for the orchestrator):
 #
