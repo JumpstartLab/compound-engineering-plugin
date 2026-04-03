@@ -140,7 +140,11 @@ reviewers:
 #     branch: main                  # Branch to fetch from (default: main)
 #     path: reviewers/              # Directory within the repo (default: root)
 
-sources: []
+sources:
+  - name: ce-reviewers
+    repo: JumpstartLab/ce-reviewers
+    branch: main
+    path: .
 
 # Selection rules (for the orchestrator):
 #
