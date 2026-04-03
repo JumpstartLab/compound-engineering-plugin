@@ -71,11 +71,19 @@ sources:
 | `branch` | no | `main` | Branch to fetch from |
 | `path` | no | `.` | Directory within the repo containing reviewer `.md` files |
 
+## Conflict Resolution
+
+Sources listed first in the YAML have higher priority. If two sources contain a file with the same name, the first source wins.
+
+To implement this, **process sources in reverse order** (bottom-to-top). Each source writes its files, and earlier sources overwrite later ones. This ensures the first-listed source has final say.
+
+When a conflict is detected, warn: "Conflict: {filename} — keeping version from '{higher-priority-source}' (overrides '{lower-priority-source}')"
+
 ## Execution
 
 1. **Read the registry** at the path shown above. Parse the YAML and extract the `sources` array.
 2. **If sources is empty or missing**, report "No external reviewer sources configured" and explain how to add one to `reviewer-registry.yaml`.
-3. **For each source**:
+3. **Process sources in reverse order** (last source first, first source last — so first-listed source wins conflicts):
    a. Announce: "Syncing from {name} ({repo}@{branch}:{path})..."
    b. Determine if `gh` is available (`which gh`). Use `gh` if present, `git clone` otherwise.
    c. Fetch all `.md` files from the source path (skip README.md).
@@ -83,8 +91,9 @@ sources:
       - New file → copy and report "Added: {filename}"
       - Changed file → overwrite and report "Updated: {filename}"
       - Unchanged → report "Unchanged: {filename}"
-   e. Report files in `agents/review/` that are not present in any configured source (don't auto-delete — just warn about orphans).
-4. **Summary**: "Synced {n} reviewers from {m} sources. {added} added, {updated} updated, {unchanged} unchanged."
+   e. Track which source provided each file for conflict reporting.
+4. **Report orphans**: files in `agents/review/` (excluding `_template-reviewer.md`) that are not present in any configured source. Don't auto-delete — just warn.
+5. **Summary**: "Synced {n} reviewers from {m} sources. {added} added, {updated} updated, {unchanged} unchanged, {conflicts} conflicts resolved."
 
 ## Error Handling
 

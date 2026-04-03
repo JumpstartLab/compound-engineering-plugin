@@ -141,7 +141,11 @@ reviewers:
 #     path: reviewers/              # Directory within the repo (default: root)
 
 sources:
-  - name: ce-reviewers
+  - name: jsl-reviewers
+    repo: JumpstartLab/ce-reviewers-test
+    branch: main
+    path: .
+  - name: ce-default
     repo: JumpstartLab/ce-reviewers
     branch: main
     path: .
