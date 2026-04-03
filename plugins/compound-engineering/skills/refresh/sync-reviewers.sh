@@ -342,3 +342,4 @@ done
 echo "${total} reviewers synced. ${added} added, ${updated} updated, ${unchanged} unchanged."
 [ "$skipped" -gt 0 ] && echo "${skipped} excluded by config."
 [ "$conflicts" -gt 0 ] && echo "${conflicts} conflicts resolved (first source wins)."
+exit 0
