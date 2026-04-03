@@ -9,12 +9,24 @@ Syncs reviewer persona files from external Git repositories into the plugin's `a
 
 ## Execution
 
-Run the sync script and **show the full output to the user verbatim** — do not summarize or paraphrase it. The script produces a detailed summary report that the user wants to see in full.
+First, find the plugin's install location. It lives in the Claude plugin cache:
 
 ```bash
-bash plugins/compound-engineering/skills/refresh/sync-reviewers.sh \
-  plugins/compound-engineering/skills/ce-review/references/reviewer-registry.yaml \
-  plugins/compound-engineering/agents/review
+PLUGIN_DIR=$(find "$HOME/.claude" "$HOME/.claude-"* -path "*/compound-engineering/*/agents/review" -type d 2>/dev/null | head -1 | sed 's|/agents/review$||')
+```
+
+If that fails (e.g., running from the plugin source repo), fall back to the relative path:
+
+```bash
+PLUGIN_DIR="${PLUGIN_DIR:-plugins/compound-engineering}"
+```
+
+Then run the sync script and **show the full output to the user verbatim** — do not summarize or paraphrase it. The script produces a detailed summary report that the user wants to see in full.
+
+```bash
+bash "$PLUGIN_DIR/skills/refresh/sync-reviewers.sh" \
+  "$PLUGIN_DIR/skills/ce-review/references/reviewer-registry.yaml" \
+  "$PLUGIN_DIR/agents/review"
 ```
 
 After the script completes, output its full results directly. Do not rewrite, condense, or interpret the output.
