@@ -2,16 +2,60 @@
 #
 # sync-reviewers.sh — Fetch reviewer .md files from configured external repos
 #
-# Usage: ./sync-reviewers.sh <registry-yaml> <output-dir>
+# Usage: ./sync-reviewers.sh <default-registry-yaml> <output-dir>
 #
-# Reads sources from the YAML registry, fetches .md files from each repo,
-# and writes them to the output directory. First-listed source wins on
-# filename conflicts (processed in reverse order).
+# Checks for a user-level config at ~/.config/compound-engineering/reviewer-sources.yaml.
+# If it doesn't exist, creates it from the default registry. Then reads sources from
+# the user config, fetches .md files, and writes them to the output directory.
+# First-listed source wins on filename conflicts (processed in reverse order).
 
 set -u
 
-REGISTRY="${1:?Usage: sync-reviewers.sh <registry-yaml> <output-dir>}"
-OUTPUT_DIR="${2:?Usage: sync-reviewers.sh <registry-yaml> <output-dir>}"
+DEFAULT_REGISTRY="${1:?Usage: sync-reviewers.sh <default-registry-yaml> <output-dir>}"
+OUTPUT_DIR="${2:?Usage: sync-reviewers.sh <default-registry-yaml> <output-dir>}"
+
+USER_CONFIG_DIR="$HOME/.config/compound-engineering"
+USER_CONFIG="$USER_CONFIG_DIR/reviewer-sources.yaml"
+
+# --- First-run: seed user config from default ---
+if [ ! -f "$USER_CONFIG" ]; then
+  mkdir -p "$USER_CONFIG_DIR"
+  cat > "$USER_CONFIG" << 'YAML'
+# Reviewer Sources
+#
+# Configure which repos to pull reviewer personas from.
+# Run /ce:refresh to sync reviewers after editing this file.
+#
+# Fields:
+#   name    — Label for this source
+#   repo    — GitHub owner/repo
+#   branch  — Branch to fetch from (default: main)
+#   path    — Directory containing .md files (default: .)
+#   except  — List of reviewer filenames (without .md) to skip
+#
+# Sources listed first have higher priority. If two sources have
+# a file with the same name, the first source's version is kept.
+
+YAML
+  # Append the sources from the default registry
+  python3 -c "
+with open('$DEFAULT_REGISTRY') as f:
+    lines = f.readlines()
+printing = False
+for line in lines:
+    if line.strip() == 'sources:':
+        printing = True
+    if printing:
+        if line.strip().startswith('#') and '===' in line:
+            break
+        print(line, end='')
+" >> "$USER_CONFIG"
+  echo "Created $USER_CONFIG"
+  echo "Edit this file to add your own reviewer repos, then run /ce:refresh again."
+  echo ""
+fi
+
+REGISTRY="$USER_CONFIG"
 
 mkdir -p "$OUTPUT_DIR"
 
