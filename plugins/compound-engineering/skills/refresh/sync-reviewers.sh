@@ -304,50 +304,39 @@ SUMMARY_FILE="${USER_CONFIG_DIR}/last-refresh-summary.md"
 echo "# Reviewer Refresh Summary"
 echo ""
 
-# Per-source report built from source_log and exclude tracking
+# Per-source report — compact comma-separated format
 for (( i=0; i<num_sources; i++ )); do
   source_json=$(echo "$sources_json" | python3 -c "import json,sys; print(json.dumps(json.load(sys.stdin)[$i]))")
   name=$(jfield "$source_json" "name" "source-$i")
   repo=$(jfield "$source_json" "repo")
   branch=$(jfield "$source_json" "branch" "main")
 
-  echo "## ${name} (${repo}@${branch})"
-  echo ""
+  echo "**${name}** (${repo}@${branch})"
 
-  # Included: files in source_log owned by this source
-  included=$(grep ":${name}$" "$source_log" 2>/dev/null | cut -d: -f1 | sed 's/\.md$//' | sort || true)
+  # Included: comma-separated, alphabetical
+  included=$(grep ":${name}$" "$source_log" 2>/dev/null | cut -d: -f1 | sed 's/\.md$//' | sort | paste -sd, - | sed 's/,/, /g' || true)
   if [ -n "$included" ]; then
-    echo "**Included:**"
-    echo "$included" | while IFS= read -r reviewer; do
-      echo "- ${reviewer}"
-    done
+    echo "Included: ${included}"
   else
-    echo "**Included:** (none)"
+    echo "Included: (none)"
   fi
 
-  # Excluded
+  # Excluded: comma-separated, alphabetical
   if [ -s "${summary_dir}/${name}/excluded" ]; then
-    echo ""
-    echo "**Excluded:**"
-    sort -u "${summary_dir}/${name}/excluded" | while IFS= read -r reviewer; do
-      echo "- ${reviewer}"
-    done
+    excluded=$(sort -u "${summary_dir}/${name}/excluded" | paste -sd, - | sed 's/,/, /g')
+    echo "Excluded: ${excluded}"
   fi
 
-  # Overridden
+  # Overridden: comma-separated, alphabetical
   if [ -s "${summary_dir}/${name}/overridden" ]; then
-    echo ""
-    echo "**Overridden:**"
-    sort -u "${summary_dir}/${name}/overridden" | while IFS= read -r entry; do
-      echo "- ${entry}"
-    done
+    overridden=$(sort -u "${summary_dir}/${name}/overridden" | paste -sd, - | sed 's/,/, /g')
+    echo "Overridden: ${overridden}"
   fi
 
   echo ""
 done
 
-echo "---"
-echo "**${total} reviewers synced.** ${added} added, ${updated} updated, ${unchanged} unchanged."
+echo "${total} reviewers synced. ${added} added, ${updated} updated, ${unchanged} unchanged."
 [ "$skipped" -gt 0 ] && echo "${skipped} excluded by config."
 [ "$conflicts" -gt 0 ] && echo "${conflicts} conflicts resolved (first source wins)."
 } > "$SUMMARY_FILE"
