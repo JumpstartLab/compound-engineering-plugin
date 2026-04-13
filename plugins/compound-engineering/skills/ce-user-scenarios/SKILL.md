@@ -28,7 +28,14 @@ If no stage is specified, use these heuristics:
 Find the plugin's install location:
 
 ```bash
-PLUGIN_DIR=$(find "$HOME/.claude" "$HOME/.claude-"* -path "*/compound-engineering/*/agents/user" -type d 2>/dev/null | head -1 | sed 's|/agents/user$||')
+# Prefer the active Claude profile ($CLAUDE_CONFIG_DIR) over a global search
+if [ -n "$CLAUDE_CONFIG_DIR" ]; then
+  PLUGIN_DIR=$(find "$CLAUDE_CONFIG_DIR" -path "*/compound-engineering/*/agents/user" -type d 2>/dev/null | head -1 | sed 's|/agents/user$||')
+fi
+# Fall back to searching all Claude profiles if not found via CLAUDE_CONFIG_DIR
+if [ -z "$PLUGIN_DIR" ]; then
+  PLUGIN_DIR=$(find "$HOME/.claude" "$HOME/.claude-"* -path "*/compound-engineering/*/agents/user" -type d 2>/dev/null | head -1 | sed 's|/agents/user$||')
+fi
 ```
 
 Fall back to relative path if not found:
