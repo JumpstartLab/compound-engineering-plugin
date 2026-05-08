@@ -67,6 +67,7 @@ This plan satisfies the load-bearing requirements from the origin document. Many
 - **No dialogue-relay for needs-input.** Hard halt; user re-runs `/ce:run erin` with answers in args.
 - **No generic `wrapped: <persona>` primitive in `ce-run`.** Just a small `wrapped: true` recognition hook.
 - **Only the `work` phase wrapped in v1.** `review`, `plan-review`, `everyday-usability` are reconsidered after dogfood evidence.
+- **Wrapped `/ce:work` is pinned to Inline execution strategy.** Per Unit 1 spike: subagents lack the `Agent` tool, so `/ce:work`'s Serial-subagent / Parallel-subagent / Swarm strategies cannot run inside the wrapped subagent. Erin's dispatch prompt explicitly forces Inline strategy and forbids nested skill invocations that would dispatch (e.g., `/ce:review`). Plans that genuinely need internal fan-out are out of scope for v1; if the need appears, escalate to Workaround B per the spike findings.
 
 ## Context & Research
 
@@ -262,6 +263,7 @@ Time-box to one week. If after one week the probe shows non-interactive depth-2 
 - Frontmatter: add `wrapped: true` to the `work` phase entry.
 - New behavior section "## Wrapped phases":
   - **Dispatch sequence.** Write run-state.md `about_to_dispatch` → capture pre-dispatch SHA → update run-state with SHA → Agent dispatch (model opus, prompt: skill invocation + args; no review-preferences in v1).
+  - **Inline-only execution constraint (Workaround A).** Subagents in Claude Code do not have the `Agent` tool (verified by Unit 1 spike). The wrapped `/ce:work` invocation MUST therefore be constrained to inline execution. Erin's dispatch prompt must include: (1) "Choose **Inline** execution strategy in Phase 1 step 4; do NOT use Serial subagents, Parallel subagents, or Swarm Mode — they will fail at depth-2." (2) "Do NOT invoke `/ce:review`, `/ce:plan`, or any other skill that internally dispatches via `Agent` — those are separate Erin phases and must not be nested inside the wrapped `work` phase." Without these clauses the wrapped phase will error mid-flight when it tries to dispatch and the Agent tool isn't available. If a future plan genuinely needs internal fan-out, escalate to Workaround B (`claude -p` subprocess) per the spike findings — out of scope for v1.
   - **Verification on return.** Read handoff. Run `git diff --stat <pre_sha>` (no `..HEAD`) for verified files/lines.
   - **Empty-success check.** If `status in {success, partial}` AND verified files=0 AND verified lines=0 → re-spawn once with corrective prompt naming the missing evidence; surface on second occurrence.
   - **Failure recovery.** Re-spawn once on detectable failure (Agent error, malformed handoff frontmatter, missing referenced artifacts); surface on second.
