@@ -1,7 +1,7 @@
 ---
 title: "feat(erin): subagent wrapping for the work phase"
 type: feat
-status: active
+status: shipped-v1
 date: 2026-05-07
 origin: docs/brainstorms/2026-05-07-erin-phase-isolation-requirements.md
 spike: docs/solutions/2026-05-07-agent-tool-depth-2-spike.md
@@ -192,7 +192,7 @@ status: success
 
 ## Implementation Units
 
-- [ ] **Unit 1: Platform spike — depth-2 dispatch reliability + streaming visibility (HARD GATE)**
+- [x] **Unit 1: Platform spike — depth-2 dispatch reliability + streaming visibility (HARD GATE)** ✅ Complete (2026-05-07). Findings: depth-2 direct dispatch unsupported (0/5); Workaround A (inline-only constraint) adopted for v1; Workaround B (`claude -p` subprocess) verified as escape hatch. See `docs/solutions/2026-05-07-agent-tool-depth-2-spike.md`.
 
 **Goal:** Verify Claude Code's `Agent` tool supports depth-2 subagent dispatch (Opus parent → Opus child → 2 parallel Sonnet grandchildren) with visible streaming. Qualitative gate, not numeric thresholds.
 
@@ -223,7 +223,7 @@ Time-box to one week. If after one week the probe shows non-interactive depth-2 
 
 ---
 
-- [ ] **Unit 2: ce-run wrapped-phase recognition hook**
+- [x] **Unit 2: ce-run wrapped-phase recognition hook** ✅ Complete. `plugins/compound-engineering/skills/ce-run/SKILL.md:62` adds the wrapped-phase recognition branch in Step 5 — yields control to the orchestrator's wrapped-phase behavior when `wrapped: true`, otherwise proceeds in-thread.
 
 **Goal:** Add a small branch to ce-run's phase loop that recognizes `wrapped: true` and yields to the orchestrator's wrapped-phase behavior.
 
@@ -248,7 +248,7 @@ Time-box to one week. If after one week the probe shows non-interactive depth-2 
 
 ---
 
-- [ ] **Unit 3: Erin orchestrator behavior update**
+- [x] **Unit 3: Erin orchestrator behavior update** ✅ Complete. `ce-reviewers-jsl/orchestrators/erin.md` (upstream main, sha `37f1ecc`) adds `wrapped: true` to the `work` phase plus the full "## Wrapped phases" section: run-state file shape, dispatch sequence with pre-dispatch SHA capture, Workaround-A inline-only + no-nested-Agent-skills constraints injected verbatim, handoff schema (no `claimed_*`), empty-success check with single re-spawn, needs-input hard halt, failure recovery, resume protocol with mtime reconciliation.
 
 **Goal:** Add `wrapped: true` to the work phase entry. Add minimal behavior prose covering dispatch, git-diff verification, empty-success check, needs-input halt, run-state writes, and resume protocol.
 
@@ -282,7 +282,7 @@ Time-box to one week. If after one week the probe shows non-interactive depth-2 
 
 ---
 
-- [ ] **Unit 4: Dogfood on one real feature**
+- [x] **Unit 4: Dogfood on one real feature** ✅ Complete (2026-05-08). Dogfooded `/ce:run erin` end-to-end on the eval-draft mobile single-player evaluator (kick_scout). Wrapped work phase dispatched cleanly, run-state survived as recovery anchor, handoff schema covered the actionable surface. Three v2 reinforcements identified: (1) replace single `git diff <pre_sha>` check with two-diff comparison (commits-since-dispatch + working-tree) so Erin can distinguish the subagent's work from parallel-stream merges, (2) add plan-required-test coverage check to verification, (3) document v1's wrapping scope explicitly. Post-mortem: `docs/solutions/2026-05-08-erin-wrapping-dogfood.md`. v1 verdict: mechanism works; reinforcements are protocol-around, not mechanism-itself.
 
 **Goal:** Run `/ce:run erin` on a real feature end-to-end with the wrapped work phase. Note what worked, what broke, what feels different. Decide v2 scope from the experience, not anticipation.
 
