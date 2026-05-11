@@ -116,6 +116,61 @@ mkdir -p ".context/compound-engineering/ce-user-scenarios/$RUN_ID/"
 
 Per-persona subdirectories are created in Step 4 as personas are spawned.
 
+## Step 3.6: Validate URL and auth-config
+
+This step runs only in live-app mode. If narrative mode was selected in Step 3.5, skip directly to Step 4.
+
+Abort the run with a clear, actionable error message if any check below fails. Do not proceed to Step 4 with partially-valid inputs.
+
+### URL validation
+
+The `url:<value>` argument must satisfy:
+
+1. **Scheme is `http` or `https` only.** Other schemes (`file:`, `gopher:`, `data:`, custom protocols) are rejected.
+2. **Hostname resolves to a non-private, non-loopback, non-link-local IP.** Reject if the resolved IP falls in any of:
+   - RFC-1918 private ranges: `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`
+   - Loopback: `127.0.0.0/8`, `::1`
+   - Link-local: `169.254.0.0/16`, `fe80::/10`
+   - **IPv6 Unique Local Addresses: `fc00::/7`**
+
+   **Exception:** `localhost` and `127.0.0.1` are permitted for local development. Document this exemption in the user-facing error message so callers understand why local URLs work but other private addresses don't.
+
+   **Residual risk (documented, out of scope for this skill):** DNS rebinding attacks where a hostname resolves to a public IP at validation time but returns a private IP at navigation time. Full mitigation requires OS-level controls (firewall, DNS pinning) outside the skill's reach. Documented in `references/auth-config-schema.md`.
+
+3. **Liveness check.** Confirm the URL is reachable before spawning personas:
+
+   ```bash
+   curl -sSf --max-redirs 0 --max-time 5 -o /dev/null "$URL"
+   ```
+
+   The `--max-redirs 0` flag prevents redirect-to-internal exfiltration where an attacker-controlled public URL redirects to a private resource. `-sSf` exits non-zero on any HTTP error. The 5-second timeout caps the probe.
+
+### auth-config validation
+
+The `auth-config:<file-path>` argument must satisfy:
+
+1. **It is a file path, not inline YAML.** Reject inline credentials in the arg string outright. The path is resolved relative to the current working directory or treated as absolute.
+2. **The file exists and is parseable YAML.**
+3. **The top-level `type:` field is one of `password` or `magic_link`.** Other variants (including `oauth_dev`) are rejected in v1.
+4. **Field-type-aware validation per the type.** See `references/auth-config-schema.md` for the full schema. The rules:
+
+   **URL fields** — `sign_in_url`, `post_login_url`, and `mail_capture_url`:
+   - Scheme is `http` or `https`
+   - Parseable hostname
+   - Reject if the resolved IP is in the reject list above
+   - **Exception:** `mail_capture_url` is exempt from the loopback reject. Dev-mail capture services (letter_opener_web, mailcatcher) are conventionally on `localhost`. The exemption is field-specific: only `mail_capture_url` may resolve to a loopback or RFC-1918 address. `sign_in_url`, `post_login_url`, and the primary `url:` argument retain the full reject list.
+
+   **Env-var-name fields** — `email_env`, `password_env`:
+   - Match `^[A-Z][A-Z0-9_]*$` (uppercase, alphanumeric, underscore; must start with a letter)
+   - **AND** the referenced env var must be set and non-empty in the current environment at validation time. Abort with a named error identifying which env var is missing or empty.
+
+   **Selector fields** — `mail_link_recipient_selector`:
+   - Non-empty string
+
+   These rules are field-type-aware on purpose. An earlier heuristic ("reject any value with two or more consecutive non-alphanumerics") would have rejected the URLs in this skill's own example configurations because `://` matches. Field-type-aware validation reflects what each value actually represents.
+
+If all checks pass, proceed to Step 4.
+
 ## Step 4: Spawn persona agents
 
 Read `references/user-subagent-template.md` for the prompt template and stage framing blocks.
