@@ -135,3 +135,42 @@ The architecture survives. No reroll to scout-plus-critic is warranted. The Unit
 - `.context/compound-engineering/ce-user-scenarios/1778455594/nancy/` — 1 screenshot (sandbox test artifact)
 
 These are gitignored under `.context/` and serve as the spike's empirical receipts.
+
+## Unit 7 Reduced Smoke (2026-05-10, post-Unit-6)
+
+After Units 1-6 shipped, a reduced smoke run validated the actual SKILL.md text end-to-end. One sonnet subagent (Mark — mobile-first persona) was dispatched with a prompt assembled from the implementation-live-app block in `references/user-subagent-template.md` with all 9 live-app template variables substituted. The persona evaluated KickScout's parent-side experience as Sarah Wilson at 390×844.
+
+### Pass criteria
+
+| Criterion | Result |
+|---|---|
+| Live-app mode reached | ✅ 38 agent-browser CLI invocations across a full multi-page walk |
+| `--session ce-user-scenarios-1778471850-mark` used consistently | ✅ Every call carried the unique session name |
+| Persona authenticated successfully | ✅ Post-login URL reached, "SW" identity confirmed in nav |
+| Mobile viewport applied | ✅ 390×844 via `set viewport` (a CLI quirk: `resize` returned "unknown command") |
+| ≥2 real screenshots captured at the run-id directory | ✅ 7 screenshots, all cited paths exist on disk |
+| Structured tail present | ✅ All four required lines (URLs visited, screenshots captured, errors, action-budget consumption) |
+| Stayed on localhost throughout | ✅ Zero off-allowlist navigation attempts |
+
+### Measurements
+
+- Invocations: 38/40 (95% of cap — close to the re-tune threshold of 75% noted in Step 4)
+- Screenshots: 7/20 (35%)
+- Wall-clock: ≈180s/300s (60%)
+- Per-call average: 4.7s — faster than the plan's 7.5s estimate, likely because Mark's mobile-only walk required less navigation back-and-forth than Dorry's design-survey walk in Unit 0
+
+### Action-budget finding
+
+Mark consumed 95% of his invocation cap. The plan flags 75%+ on any cap as a smell warranting re-tuning. The 5-persona Unit 7 full smoke is a better measurement opportunity than this single run, but the signal is real: the 40-invocation cap may be tight for personas asked to evaluate a broad surface area. If the next observation also exceeds 30 invocations, raise the cap to 60 before the plugin PR merges.
+
+### Real bug surfaced
+
+The persona reported a concrete KickScout bug — the chat compose row at 390×844 overlaps the bottom navigation by 16 pixels. The bottom 16px of the Send button is behind the nav; `document.elementFromPoint(348, 785)` returns the Chat nav link rather than the Send input. CLAUDE.md describes this exact class of failure ("C1 bug from the 2026-05-05 mobile audit") and documents the `--chrome-bottom-reserved` composition system that's supposed to prevent it. The smoke confirms the system has regressed for the chat compose surface specifically.
+
+This is exactly the value of observed-versus-imagined personas: a narrative-only persona would have produced UI critique about mobile design but could not have measured the actual y-coordinate overlap between two real elements on a real page. The smoke produced an actionable bug report KickScout can fix.
+
+### Smoke verdict
+
+The SKILL.md text wires through cleanly. The implementation-live-app stage framing block, variable substitution, action budget enforcement, structured tail format, and untrusted-context boundary all functioned as specified. Plugin PR is ready for `ce:review` autofix and merge.
+
+Scenarios B (fallback warning), C (adversarial input), and D (drift detection) are deferred to the full Unit 7 in a fresh session — they don't require an end-to-end persona run and can be exercised against the contract test plus targeted SKILL.md invocations. Scenario E (Erin chain) is gated on Unit 9.
