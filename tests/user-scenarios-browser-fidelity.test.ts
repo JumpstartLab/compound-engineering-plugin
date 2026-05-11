@@ -288,14 +288,18 @@ describe("ce:user-scenarios — R15 cross-cutting (forbidden + required phrases 
     const content = await readRepoFile(TEMPLATE_PATH)
 
     // Extract the implementation-live-app and presentation-live-app blocks.
-    // Both run from their ### header to the next ###-or-end-of-file.
+    // Both run from their ### header to the next heading at any level (# .. ######)
+    // or end-of-file. Header search is case-insensitive so capitalization drift in the
+    // template fails with a meaningful message rather than a confusing -1.
     const liveAppBlocks: string[] = []
     const blockHeaders = ["### implementation-live-app", "### presentation-live-app"]
+    const contentLower = content.toLowerCase()
     for (const header of blockHeaders) {
-      const startIdx = content.indexOf(header)
-      expect(startIdx).toBeGreaterThan(-1)
+      const startIdx = contentLower.indexOf(header.toLowerCase())
+      expect(startIdx, `Expected to find header '${header}' (case-insensitive) in template`).toBeGreaterThan(-1)
       const afterHeader = content.slice(startIdx + header.length)
-      const nextHeaderIdx = afterHeader.indexOf("\n## ")
+      const nextHeaderMatch = afterHeader.match(/\n#{1,6}\s/)
+      const nextHeaderIdx = nextHeaderMatch ? nextHeaderMatch.index! : -1
       const block = nextHeaderIdx === -1 ? afterHeader : afterHeader.slice(0, nextHeaderIdx)
       liveAppBlocks.push(block)
     }

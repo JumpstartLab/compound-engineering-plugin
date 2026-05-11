@@ -162,6 +162,7 @@ This applies equally to any platform's variables — a skill converted from Code
 - **Plans** live in `docs/plans/` — implementation plans and progress tracking.
 - **Solutions** live in `docs/solutions/` — documented decisions and patterns.
 - **Specs** live in `docs/specs/` — target platform format specifications.
+- **Spikes** live in `docs/spikes/` — time-boxed architecture-gate reports that capture what was probed, the verdict (green/yellow/red), and the corrections folded back into a plan. Distinct from `docs/solutions/`, which captures durable patterns and decisions after work ships. A spike that succeeds and yields a pattern should be summarized into `docs/solutions/`; the original `docs/spikes/` report stays as the empirical evidence.
 
 ### Solution categories (`docs/solutions/`)
 

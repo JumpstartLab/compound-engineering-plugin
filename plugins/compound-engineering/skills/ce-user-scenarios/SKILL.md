@@ -93,10 +93,13 @@ Narrative mode applies otherwise — including the `concept` and `plan` stages, 
 If the stage is `implementation` or `presentation` and either `url:` or `auth-config:` is missing (or both are missing), emit this warning as part of the primary output (not buried in logs) and proceed in narrative mode:
 
 ```
+<degraded-mode>fallback-to-narrative</degraded-mode>
 ⚠️  Live-app evaluation requires `url:` and `auth-config:` — falling back to narrative-only mode for this run. To observe the live app, re-run with `url:http://localhost:3000 auth-config:./auth.yaml` (see `references/auth-config-schema.md` for the auth.yaml format).
 ```
 
-This warning serves a second purpose: when ce:user-scenarios is invoked via the Erin orchestrator's `everyday-usability` phase and Erin's args-forwarding has regressed (a cross-repo drift in `ce-reviewers-jsl`), the user sees this exact warning even when they did supply `url:` and `auth-config:` to `/ce:run erin`. The warning text is therefore the observable failure mode for both skill-internal misuse AND cross-repo orchestrator drift.
+The `<degraded-mode>` tag is the machine-readable signal — orchestrators (Erin, downstream skills) detect it via plain substring match and can branch on it without parsing the prose warning. The prose warning is the human-readable signal. Both are emitted together.
+
+This warning serves a second purpose: when ce:user-scenarios is invoked via the Erin orchestrator's `everyday-usability` phase and Erin's args-forwarding has regressed (a cross-repo drift in `ce-reviewers-jsl`), the user sees this exact warning even when they did supply `url:` and `auth-config:` to `/ce:run erin`. The tag + prose pair is therefore the observable failure mode for both skill-internal misuse AND cross-repo orchestrator drift.
 
 ### Generate run identifiers (live-app mode only)
 
@@ -133,7 +136,9 @@ The `url:<value>` argument must satisfy:
    - Link-local: `169.254.0.0/16`, `fe80::/10`
    - **IPv6 Unique Local Addresses: `fc00::/7`**
 
-   **Exception:** `localhost` and `127.0.0.1` are permitted for local development. Document this exemption in the user-facing error message so callers understand why local URLs work but other private addresses don't.
+   **Exception:** `localhost`, `127.0.0.1`, and IPv6 loopback `::1` are permitted for local development. Document this exemption in the user-facing error message so callers understand why local URLs work but other private addresses don't.
+
+   **IPv6 canonicalization.** When the resolved address is IPv6, canonicalize it before range-matching — specifically, IPv4-mapped IPv6 literals like `::ffff:127.0.0.1` and `::ffff:192.168.1.1` must be normalized to their embedded IPv4 form so the RFC-1918 and loopback rejects fire. Use a standard library (Ruby's `IPAddr`, Python's `ipaddress.ip_address(...).ipv4_mapped`, Node's `net.isIPv4`/`net.isIPv6`) — naive string-prefix checks against `127.0.` or `192.168.` will miss the mapped form.
 
    **Residual risk (documented, out of scope for this skill):** DNS rebinding attacks where a hostname resolves to a public IP at validation time but returns a private IP at navigation time. Full mitigation requires OS-level controls (firewall, DNS pinning) outside the skill's reach. Documented in `references/auth-config-schema.md`.
 
@@ -161,8 +166,11 @@ The `auth-config:<file-path>` argument must satisfy:
    - **Exception:** `mail_capture_url` is exempt from the loopback reject. Dev-mail capture services (letter_opener_web, mailcatcher) are conventionally on `localhost`. The exemption is field-specific: only `mail_capture_url` may resolve to a loopback or RFC-1918 address. `sign_in_url`, `post_login_url`, and the primary `url:` argument retain the full reject list.
 
    **Env-var-name fields** — `email_env`, `password_env`:
-   - Match `^[A-Z][A-Z0-9_]*$` (uppercase, alphanumeric, underscore; must start with a letter)
-   - **AND** the referenced env var must be set and non-empty in the current environment at validation time. Abort with a named error identifying which env var is missing or empty.
+   - Each is a **template name** that must contain the literal token `PERSONA` (uppercase). The skill substitutes the uppercased persona filename (e.g., `chuck`, `dorry`) to derive per-persona env-var names. `KS_PERSONA_EMAIL` → `KS_BETTY_EMAIL`, `KS_CHUCK_EMAIL`, etc.
+   - Reject the auth-config if the template lacks the `PERSONA` token — without it the skill cannot produce distinct names per persona, and the magic-link flow loses inbox isolation.
+   - Each derived name must match `^[A-Z][A-Z0-9_]*$`.
+   - **AND** every derived env var must be set and non-empty at validation time, checked once per persona discovered in Step 2. Abort with a named error identifying both the persona and the missing variable (e.g., `KS_CHUCK_EMAIL is not set; required for persona chuck`).
+   - See `references/auth-config-schema.md` § "Per-persona env-var derivation" for the worked table.
 
    **Selector fields** — `mail_link_recipient_selector`:
    - Non-empty string
@@ -222,12 +230,34 @@ For each persona file discovered in Step 2:
    - `{persona_file}` — the full persona markdown content
    - `{stage_framing}` — the stage-specific framing block selected above
    - `{feature_context}` — the assembled feature context from Step 3
-   - For live-app mode only, also fill: `{run_id}`, `{session_name}` (composed as `ce-user-scenarios-${RUN_ID}-${PERSONA_NAME}`), `{url}`, `{auth_config_excerpt}` (structural fields plus env-var names only — see Unit 2), `{allowed_domains}` (hostnames extracted from `url:` and any `mail_capture_url`, comma-joined, no ports), `{persona_email_env}` (per-persona env-var identity assignment from `auth-config:`), `{max_invocations}`, `{max_screenshots}`, `{max_wall_clock_seconds}`
+   - For live-app mode only, also fill: `{run_id}`, `{session_name}` (composed as `ce-user-scenarios-${RUN_ID}-${PERSONA_NAME}`), `{url}`, `{auth_config_excerpt}` (structural fields plus env-var names only — see Unit 2), `{allowed_domains}` (hostnames extracted from `url:` and any `mail_capture_url`, comma-joined, no ports), `{persona_email_env}` (derived per-persona env-var name — substitute the uppercased persona filename for the `PERSONA` token in the auth-config's `email_env` template; e.g., template `KS_PERSONA_EMAIL` + persona `chuck` → `KS_CHUCK_EMAIL`. See Step 3.6 and `references/auth-config-schema.md`.), `{max_invocations}`, `{max_screenshots}`, `{max_wall_clock_seconds}`
 4. Spawn a sub-agent with the model selected above and the constructed prompt
 
 Spawn all persona agents in parallel. If parallel dispatch is not supported, spawn sequentially.
 
 Wait for all agents to complete. If an agent times out or fails, note it and continue with the responses received.
+
+### Persona result envelope
+
+After each persona returns, wrap its raw output with a structured envelope so callers (Step 6 synthesis, Erin, downstream orchestrators) can route on outcome without parsing prose:
+
+```
+<persona-result name="dorry" status="success">
+[persona's narrative + structured tail verbatim]
+</persona-result>
+```
+
+`status` is one of: `success`, `error`, `timeout`, `silent-failure`, `malformed`. Determination rules:
+
+| `status` | Condition |
+|---|---|
+| `success` | Persona returned, structured tail parses cleanly, no silent-failure or fabricated-citation tags |
+| `silent-failure` | Step 4 silent-failure detection or Step 5 screenshot-existence validation tagged the persona |
+| `timeout` | Persona exceeded any action-budget cap and returned partial output |
+| `error` | Persona subagent returned an error or never returned a coherent narrative |
+| `malformed` | Persona returned but the `## Structured Tail` section is missing or unparseable |
+
+The envelope is emitted around every persona's section in Step 5's individual narratives. Step 6 synthesis aggregates statuses into `$TERMINAL_STATE` per Step 7's rules.
 
 ### Per-persona session isolation (live-app mode only)
 
@@ -255,9 +285,19 @@ Empirically the Dorry probe ran in 24 invocations / 7 screenshots / 185 seconds 
 
 A persona that exceeds any cap must stop and produce partial output rather than continuing. The persona's structured tail records actual consumption against each cap.
 
+**Self-enforcement limitation.** The caps are enforced by the persona subagent's own counting and self-throttling — there is no skill-side timer, invocation counter, or kill switch that forcibly terminates a runaway persona. A sonnet subagent told "stop at 40 invocations" may overshoot by 1–2 calls on the same conversational turn before stopping. The synthesis tolerates small overshoot (Step 7's terminal-state rule fires `timeout` only when caps are exceeded, regardless of the magnitude). Hard skill-side enforcement (e.g., a watchdog process that kills the subagent at the wall-clock cap) is deliberately deferred to a future iteration; it would require platform support for subagent timeouts that the dispatcher does not currently expose.
+
 ### Silent-failure detection
 
-After all personas return, inspect each persona's structured tail. **If a persona's tail shows zero `agent-browser` CLI activity** (zero invocations, no URLs visited, no screenshots), tag the persona's output with `silent-failure: no browser activity recorded — possible silent failure`. Surface that tag in the synthesis (Step 6) so the reader can treat that persona's narrative with appropriate skepticism — a live-app persona that produced narrative without invoking the browser cannot have observed the application.
+After all personas return, parse each persona's `## Structured Tail` section (defined in `references/user-subagent-template.md`). Extract three fields per persona:
+
+1. **URLs visited** — the list on the `- URLs visited:` line. Trim, split on commas. Treat the literal strings `<list>` (unfilled template), `none`, and an empty value as zero.
+2. **Screenshots captured** — the list on the `- Screenshots captured (...):` line. Same parsing rules.
+3. **Action-budget consumption — invocations** — extract the integer `<invocations>` from the leading `<n>/<cap>` token on the `- Action-budget consumption:` line via regex `^\s*(\d+)\s*/\s*\d+\s+invocations`. A missing or non-integer value is treated as zero.
+
+**A persona is tagged `silent-failure: no browser activity recorded — possible silent failure`** when all three of the following are true: zero URLs visited, zero screenshots, and zero invocations. Any single non-zero signal clears the tag — a persona that visited one URL but captured no screenshots is suspicious but not silent.
+
+Surface the tag in the synthesis (Step 6) so the reader can treat that persona's narrative with appropriate skepticism — a live-app persona that produced narrative without invoking the browser cannot have observed the application. A persona missing the entire `## Structured Tail` section is treated as `silent-failure` AND `malformed-output` and surfaced separately.
 
 ## Step 5: Present individual narratives
 
@@ -349,6 +389,12 @@ After presenting the individual narratives, produce a synthesis section that dis
 
 Skip this step in narrative mode (no browser sessions were created).
 
+### Ordering invariants
+
+- Step 5 (screenshot-existence validation) and Step 6 (synthesis) MUST complete before Step 7 runs. By the time cleanup starts, every citation has already been resolved against on-disk files and rendered into the synthesis text; cleanup is safe regardless of whether the scratch directory is retained or removed.
+- A second invocation of the skill MUST generate a fresh `$RUN_ID` (Step 3.5 uses `date +%s` to seconds-resolution). Collisions are theoretically possible if two invocations start within the same second on the same machine. If a caller may invoke the skill in rapid sequence, append a short random suffix to `$RUN_ID` (e.g., `$(date +%s)-$RANDOM`) so the scratch directory and `--session` names cannot collide across runs.
+- Per-persona cleanup is sequenced: close, then state-clear, per persona, before moving to the next. Parallel cleanup of multiple personas is permitted only if each `--session` name is unique (the dispatch already guarantees this).
+
 The run reaches one of four terminal states:
 
 | State | Meaning |
@@ -357,6 +403,23 @@ The run reaches one of four terminal states:
 | `failure` | One or more personas returned errors that prevented synthesis; or auth/validation failed before persona dispatch |
 | `timeout` | One or more personas exceeded a budget cap; partial output present |
 | `partial` | One or more personas returned with `silent-failure` or `fabricated-citation` tags; useful output present but flagged |
+
+### Determine the terminal state
+
+Before running cleanup, the orchestrator computes `$TERMINAL_STATE` from the union of persona outcomes plus pre-dispatch validation results. Apply these rules in order — the first matching rule wins:
+
+| Order | Condition | `$TERMINAL_STATE` |
+|---|---|---|
+| 1 | Step 3.6 validation aborted before any persona was spawned, OR every persona returned an error preventing synthesis | `failure` |
+| 2 | One or more personas exceeded any action-budget cap (`{max_invocations}`, `{max_screenshots}`, `{max_wall_clock_seconds}`) | `timeout` |
+| 3 | One or more personas carry a `silent-failure` or `fabricated-citation` tag from Steps 4/5 | `partial` |
+| 4 | All personas returned within budget, no flagged tags, synthesis completed | `success` |
+
+Assign the resolved value to `TERMINAL_STATE` as a shell variable before the cleanup commands below — it is consumed in the conditional scratch-directory cleanup section. Also surface the terminal state in the final synthesis output (one line, structured): `<terminal-state>success</terminal-state>` so callers (Erin, downstream orchestrators) can branch on it without parsing prose.
+
+```bash
+TERMINAL_STATE="success"  # or failure | timeout | partial — computed per rules above
+```
 
 ### Universal per-persona cleanup (every terminal state)
 
