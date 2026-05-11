@@ -377,13 +377,17 @@ Pass the resulting path list to the `project-standards` persona inside a `<stand
 
 #### Model tiering
 
-Persona sub-agents do focused, scoped work and should use cheaper/faster models to reduce cost and latency. The orchestrator itself stays on the default (most capable) model.
+**Sonnet is the judgment floor for code review.** Persona reviewers (correctness, security, maintainability, the named personas — Kieran, Julik, Corey, Avi, Steve, Greg, etc.) make judgment calls that Haiku consistently flattens into shallow string-matching. Empirically: Haiku dispatch on this skill has produced thin findings, mis-routed severities, and (worst) silent confidence drops where a real issue gets paraphrased into a non-finding. The re-run cost dominates the original spend.
 
-Use the platform's cheapest capable model for all persona and CE sub-agents. In Claude Code, pass `model: "haiku"` in the Agent tool call. On other platforms, use the equivalent fast/cheap tier (e.g., `gpt-4o-mini` in Codex). If the platform has no model override mechanism or the available model names are unknown, omit the model parameter and let agents inherit the default -- a working review on the parent model is better than a broken dispatch from an unrecognized model name.
+**Default `model: "sonnet"` for all persona sub-agents and most CE agents.** In Claude Code, pass `model: "sonnet"` in the Agent tool call. On other platforms, use the equivalent middle tier (e.g., `gpt-4o` in Codex). If the platform has no model override mechanism or the available model names are unknown, omit the model parameter and let agents inherit the session model.
 
-CE always-on agents (agent-native-reviewer, learnings-researcher) and CE conditional agents (schema-drift-detector, deployment-verification-agent) also use the cheaper model tier since they perform scoped, focused work.
+**Haiku is reserved for the two CE agents where the work is genuinely mechanical:**
+- `learnings-researcher` — keyword search across `docs/solutions/`, returns a summary of matches. Explicit spec, predictable output.
+- `compound-engineering:research:repo-research-analyst` (when invoked via ce:review for evidence gathering) — file reads and pattern enumeration.
 
-The orchestrator (this skill) stays on the default model because it handles intent discovery, reviewer selection, finding merge/dedup, and synthesis -- tasks that benefit from stronger reasoning.
+Everything else — `correctness-reviewer`, `security-reviewer`, `agent-native-reviewer`, `schema-drift-detector`, `deployment-verification-agent`, all stack-specific reviewers — uses Sonnet.
+
+**Escalation rule:** if a Sonnet reviewer returns output you can't trust (sparse findings, missed obvious issues, malformed JSON), re-run that single reviewer on Opus rather than blanket-upgrading the panel. The orchestrator (this skill) stays on the session model because it handles intent discovery, reviewer selection, finding merge/dedup, and synthesis — Erin-routed invocations get Opus; standalone invocations get whatever the user's session is on.
 
 #### Spawning
 

@@ -31,10 +31,14 @@ describe("ce:user-scenarios — Unit 1 contract (orchestration, mode gate, model
     expect(content).not.toContain("cleanup-on-success:")
   })
 
-  test("SKILL.md Step 4 selects model: sonnet for live-app AND model: haiku for narrative", async () => {
+  test("SKILL.md Step 4 selects model: sonnet for both narrative and live-app personas", async () => {
     const content = await readRepoFile(SKILL_PATH)
+    // Persona evaluation is judgment work; sonnet is the floor for both modes.
+    // Narrative mode previously used haiku; the policy shift to sonnet floor for
+    // judgment work (see ~/.claude-personal/CLAUDE.md Model Utilization Guidelines)
+    // moved narrative-mode personas to sonnet so persona voice survives.
     expect(content).toContain("model: sonnet")
-    expect(content).toContain("model: haiku")
+    expect(content).not.toContain("model: haiku")
   })
 
   test("SKILL.md Step 3.5 contains the rewritten R8 fallback warning that teaches what to run", async () => {

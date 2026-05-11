@@ -185,8 +185,10 @@ Read `references/user-subagent-template.md` for the prompt template and stage fr
 
 ### Model selection
 
-- **Narrative mode** (concept, plan, or fallback at implementation/presentation): `model: haiku` — fast and cheap for text-only reasoning.
+- **Narrative mode** (concept, plan, or fallback at implementation/presentation): `model: sonnet` — persona evaluation is judgment work. Each persona embodies a distinct viewpoint (Betty's competence + impatience, Chuck's carelessness, Dorry's design eye, Mark's mobile-first frustration, Nancy's cautious methodicalness) and produces a critique grounded in that lens. Haiku flattens persona voice into generic-evaluator prose, which defeats the point of running five personas.
 - **Live-app mode** (implementation or presentation with `url:` and `auth-config:`): `model: sonnet` — personas coordinate multi-step `agent-browser` CLI calls (navigate, snapshot, click, screenshot) and need stronger tool-orchestration ability than haiku reliably provides. Confirmed empirically by the Unit 0 spike (see `docs/spikes/2026-05-10-user-scenarios-direct-drive.md`): sonnet completed a 7-screenshot persona walk in 24 invocations / 185s, well inside the action-budget caps below.
+
+Both modes use Sonnet by design — the cost is bounded (5 personas × one-shot evaluation), and the value of distinct persona voices depends entirely on the model's ability to stay in character. Escalate a single persona to Opus only if its output is consistently generic across runs.
 
 ### Per-run environment setup (live-app mode only)
 
