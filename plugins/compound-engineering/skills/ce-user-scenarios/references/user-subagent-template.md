@@ -98,8 +98,26 @@ Be direct. This is the team's last chance to catch issues before real users hit 
 
 ## Variable Reference
 
+### Always-present variables
+
 | Variable | Source | Description |
 |----------|--------|-------------|
 | `{persona_file}` | Agent markdown file content | The full persona definition (identity, traits, usage patterns, output format) |
 | `{stage_framing}` | Stage framing block above | Stage-specific instructions that shape what the persona evaluates |
 | `{feature_context}` | Skill input | Feature description, plan content, or implementation summary — depends on the stage |
+
+### Live-app mode variables (implementation-live-app, presentation-live-app)
+
+These variables are filled only when SKILL.md Step 3.5 selects live-app mode (stage is `implementation` or `presentation` AND both `url:` and `auth-config:` are present). The live-app stage framing blocks are added in Unit 2; this list documents the variables those blocks will reference.
+
+| Variable | Source | Description |
+|----------|--------|-------------|
+| `{run_id}` | `RUN_ID=$(date +%s)` substituted as a literal in SKILL.md Step 3.5 | Unix-timestamp identifier that scopes the scratch directory and per-persona `--session` names |
+| `{session_name}` | Composed in SKILL.md Step 4 as `ce-user-scenarios-${RUN_ID}-${PERSONA_NAME}` | Passed to `agent-browser --session <name>` for isolated browser-process state per persona per run |
+| `{url}` | Skill arg `url:<value>` | The application root URL the persona evaluates |
+| `{auth_config_excerpt}` | Sanitized projection of the YAML at `auth-config:<path>` | Structural fields only (`type`, `sign_in_url`, `mail_capture_url`, `post_login_url`) plus env-var NAMES for identity fields. Never the resolved env-var value. Defined explicitly in `references/auth-config-schema.md` (added in Unit 3) |
+| `{allowed_domains}` | Hostnames extracted from `{url}` and `mail_capture_url` (if present), comma-joined, ports stripped | Passed to `AGENT_BROWSER_ALLOWED_DOMAINS` for the persona's browser session. **Hostname only — no ports**; Unit 0 spike confirmed agent-browser rejects host:port forms |
+| `{persona_email_env}` | Per-persona identity assignment from `auth-config:` | Name of the env var holding this persona's email address; the persona references it to authenticate as a distinct user |
+| `{max_invocations}` | Action-budget default (Unit 4): `40` | Persona must stop and produce partial output beyond this many `agent-browser` CLI calls |
+| `{max_screenshots}` | Action-budget default (Unit 4): `20` | Persona must stop and produce partial output beyond this many screenshots |
+| `{max_wall_clock_seconds}` | Action-budget default (Unit 4): `300` | Persona must stop and produce partial output beyond this many seconds elapsed |
