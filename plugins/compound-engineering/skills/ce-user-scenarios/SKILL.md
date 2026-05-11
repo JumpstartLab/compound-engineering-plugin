@@ -261,6 +261,20 @@ After all personas return, inspect each persona's structured tail. **If a person
 
 ## Step 5: Present individual narratives
 
+### Screenshot-existence validation (live-app mode only)
+
+Before presenting each persona's narrative, the skill resolves every screenshot path the persona cited and verifies the file exists on disk under `.context/compound-engineering/ce-user-scenarios/$RUN_ID/<persona-name>/`. For each cited path that does NOT exist on disk, append a line to the persona's structured tail:
+
+```
+fabricated-citation: <path>
+```
+
+Step 6 synthesis treats fabricated-citation findings as silent-failure signals on that persona — the persona invoked CLI commands but produced output that does not reference real evidence. The reader should weight that persona's narrative accordingly. This closes the gap where a persona could run `agent-browser` successfully but still hallucinate the screenshots it claims to have captured.
+
+### Relative-path citation preservation
+
+Persona narratives cite screenshots by relative path from the per-run directory (e.g., `dorry/03-chat.png`). Step 5 does NOT absolutize these paths in the in-process output — leave them relative so the reader can compute the on-disk location from the run-id. External sharing (e.g., uploading via the `proof` skill or pasting into a PR) MUST strip absolute paths if any leaked through; the in-process output is the canonical relative form.
+
 Present each persona's narrative response under a clear heading:
 
 ```markdown
@@ -316,6 +330,9 @@ After presenting the individual narratives, produce a synthesis section that dis
 
 ### Risk Items
 [Things that could cause users to abandon the feature entirely]
+
+### Evidence Conflicts
+[Live-app mode only. When multiple personas observed the same URL or captured screenshots of structurally equivalent surfaces (same page-name, same intended state) but reported materially different behavior — different error states, different rendered text, different element counts — surface that as a finding. Cross-reference both persona reports' evidence paths so the reader can inspect the discrepancy. This is the most distinctive value of observed-versus-imagined personas: narrative-only personas cannot disagree about what they observed because they observed nothing. Omit this subsection when no conflicts are detected.]
 ```
 
 ### Synthesis Guidelines
@@ -327,6 +344,52 @@ After presenting the individual narratives, produce a synthesis section that dis
 - For the `plan` stage, focus on unresolved questions and missing scenarios
 - For the `implementation` stage, focus on acceptance test gaps and UX issues
 - For the `presentation` stage, focus on overall readiness and launch risks
+
+## Step 7: Cleanup and terminal-state contract
+
+Skip this step in narrative mode (no browser sessions were created).
+
+The run reaches one of four terminal states:
+
+| State | Meaning |
+|---|---|
+| `success` | All personas completed within budget, returned narrative + structured tail with no fabricated-citation tags, and synthesis ran to completion |
+| `failure` | One or more personas returned errors that prevented synthesis; or auth/validation failed before persona dispatch |
+| `timeout` | One or more personas exceeded a budget cap; partial output present |
+| `partial` | One or more personas returned with `silent-failure` or `fabricated-citation` tags; useful output present but flagged |
+
+### Universal per-persona cleanup (every terminal state)
+
+Regardless of terminal state, the skill issues these two commands for every persona that was spawned:
+
+```bash
+npx agent-browser --session {session_name} close
+npx agent-browser state clear {session_name}
+```
+
+`close` terminates the daemon process for that `--session`. `state clear` removes the named session's encrypted state file from `~/.agent-browser/sessions/`. Both are required: leaving plaintext-or-encrypted session files behind after a run is never acceptable, and the next run for the same `--session` needs a clean slate to spawn a fresh daemon with fresh env vars (the spawn-time caching documented in Step 4's per-run environment setup).
+
+After per-persona cleanup completes, discard the per-run encryption key from the process environment:
+
+```bash
+unset BROWSER_ENCRYPTION_KEY AGENT_BROWSER_ENCRYPTION_KEY
+```
+
+### Conditional scratch-directory cleanup
+
+The per-run scratch directory `.context/compound-engineering/ce-user-scenarios/$RUN_ID/` is retained by default. Default retention keeps synthesis citations resolvable for later inspection and gives the user a way to revisit screenshots after the synthesis is read.
+
+Cleanup of the scratch directory is opt-in via the environment variable `CE_USER_SCENARIOS_CLEANUP`. Apply this rule:
+
+```bash
+if [ "$CE_USER_SCENARIOS_CLEANUP" = "1" ] && [ "$TERMINAL_STATE" = "success" ]; then
+  rm -rf ".context/compound-engineering/ce-user-scenarios/$RUN_ID/"
+fi
+```
+
+The env var must be exactly `1`. Other truthy-looking values (`true`, `yes`) are treated as absent. The terminal state must be exactly `success` — failure, timeout, and partial states never clean up regardless of the env var, because their artifacts are the only diagnostic evidence available.
+
+There is no first-class skill argument for cleanup by design. Power users who consistently want cleanup set `CE_USER_SCENARIOS_CLEANUP=1` once in their shell rc; default behavior is safe and inspectable. The env var is documented in `references/auth-config-schema.md`'s "Advanced" section.
 
 ## Pipeline Mode
 
