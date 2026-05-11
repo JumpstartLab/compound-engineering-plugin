@@ -178,7 +178,33 @@ Read `references/user-subagent-template.md` for the prompt template and stage fr
 ### Model selection
 
 - **Narrative mode** (concept, plan, or fallback at implementation/presentation): `model: haiku` — fast and cheap for text-only reasoning.
-- **Live-app mode** (implementation or presentation with `url:` and `auth-config:`): `model: sonnet` — personas coordinate multi-step `agent-browser` CLI calls (navigate, snapshot, click, screenshot) and need stronger tool-orchestration ability than haiku reliably provides. Confirmed empirically by the Unit 0 spike (see `docs/spikes/2026-05-10-user-scenarios-direct-drive.md`): sonnet completed a 7-screenshot persona walk in 24 invocations / 185s, well inside the action-budget caps documented in Unit 4 below.
+- **Live-app mode** (implementation or presentation with `url:` and `auth-config:`): `model: sonnet` — personas coordinate multi-step `agent-browser` CLI calls (navigate, snapshot, click, screenshot) and need stronger tool-orchestration ability than haiku reliably provides. Confirmed empirically by the Unit 0 spike (see `docs/spikes/2026-05-10-user-scenarios-direct-drive.md`): sonnet completed a 7-screenshot persona walk in 24 invocations / 185s, well inside the action-budget caps below.
+
+### Per-run environment setup (live-app mode only)
+
+Skip this section in narrative mode.
+
+Before spawning any persona subagent, the skill exports the per-run environment variables that govern `agent-browser` behavior. These are read by the `agent-browser` daemon at first-invocation spawn time for each `--session <name>` value AND are cached for the lifetime of that daemon. **Daemon spawn-time semantics: env-var changes on subsequent invocations of the same `--session` are ignored.** The cleanup contract in Step 7 issues `agent-browser state clear` on every terminal state precisely so that the next run can spawn a fresh daemon with fresh env values — that is not optional hygiene, it is load-bearing.
+
+```bash
+# Per-run ephemeral encryption key for at-rest session-state encryption.
+# Generated fresh each run; discarded on cleanup (Step 7).
+export BROWSER_ENCRYPTION_KEY=$(openssl rand -hex 32)
+export AGENT_BROWSER_ENCRYPTION_KEY="$BROWSER_ENCRYPTION_KEY"
+
+# Domain allowlist for outbound navigation from any persona session.
+# Hostname only, no ports. Composed from the host of url: plus the host
+# of mail_capture_url (if the auth-config: file references one),
+# comma-joined.
+export AGENT_BROWSER_ALLOWED_DOMAINS="<url-hostname>,<mail-capture-hostname-if-any>"
+
+# Nonce-tagged page-content boundaries for prompt-injection mitigation.
+export AGENT_BROWSER_CONTENT_BOUNDARIES=1
+```
+
+**Hostname extraction rule.** `AGENT_BROWSER_ALLOWED_DOMAINS` accepts hostnames only — **strip the port before composing the value.** Parse each URL with a standard library (Ruby's `URI`, Python's `urllib.parse`, `awk -F[:/] '{print $4}'`, etc.) and take the `host` field, which excludes the port. The Unit 0 spike confirmed that `localhost:3000` as a value rejects ALL navigation (it treats the entire string as a literal hostname, which never matches); bare `localhost` permits localhost-resolving URLs regardless of port. For KickScout's `http://localhost:3000` plus `http://localhost:3001/letter_opener` setup, the resulting value is simply `localhost`.
+
+**Subagent env-var propagation — primary path with documented fallback.** Per the Unit 0 spike, child processes spawned via the platform's subagent dispatch mechanism inherit the parent's environment, so an `export` at this level reaches the persona's Bash. If a future platform change disrupts that inheritance, the skill also injects equivalent `export` statements at the top of each persona prompt's auth-and-navigate block as a redundant path. Pick the inheritance path in normal operation; switch to prompt-injection only if observability reveals the inheritance path failed.
 
 ### Per-persona dispatch
 
@@ -203,7 +229,35 @@ Spawn all persona agents in parallel. If parallel dispatch is not supported, spa
 
 Wait for all agents to complete. If an agent times out or fails, note it and continue with the responses received.
 
-The env-var exports for live-app mode (`AGENT_BROWSER_ALLOWED_DOMAINS`, `AGENT_BROWSER_CONTENT_BOUNDARIES`, `AGENT_BROWSER_ENCRYPTION_KEY`) and the action-budget enforcement are wired in by Unit 4. The `--session` flag isolation and cleanup contract are wired in by Unit 4 and Unit 5 respectively.
+### Per-persona session isolation (live-app mode only)
+
+Each persona subagent receives a unique `--session` name composed at dispatch time:
+
+```bash
+SESSION_NAME=ce-user-scenarios-${RUN_ID}-${PERSONA_NAME}
+```
+
+`${RUN_ID}` is the timestamp from Step 3.5; `${PERSONA_NAME}` is the persona's filename without extension (e.g., `dorry`, `chuck`, `mark`). Both are substituted as literals into the persona's `{session_name}` template variable. The persona template (Unit 2) requires `--session "{session_name}"` on every `npx agent-browser` invocation.
+
+`--session <name>` is the agent-browser flag for **isolated browser process per name**. Concurrent invocations with distinct `--session` values get isolated cookies, tabs, and refs — confirmed empirically by the Unit 0 spike. `--session-name <name>` is a DIFFERENT flag (named cookie save/restore without process isolation); do not use it. Sessions sharing a `--session-name` value share state and cross-contaminate.
+
+### Action budget caps (live-app mode only)
+
+Each persona has hard ceilings on its `agent-browser` activity, surfaced into its prompt via template variables and enforced by the persona's own self-throttling per the template's action-budget reminder block:
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `{max_invocations}` | `40` | Maximum `agent-browser` CLI invocations per persona |
+| `{max_screenshots}` | `20` | Maximum screenshots per persona |
+| `{max_wall_clock_seconds}` | `300` | Maximum wall-clock seconds per persona |
+
+Empirically the Dorry probe ran in 24 invocations / 7 screenshots / 185 seconds (real per-call average ≈ 7.7 seconds), so a healthy persona walk should consume roughly 30–60% of any cap. If observed runs consistently exceed 75% of any cap (30 invocations, 15 screenshots, or 225 seconds), reduce the work asked of the persona or raise the cap on the next revision — operate near a cap is a smell, not a target.
+
+A persona that exceeds any cap must stop and produce partial output rather than continuing. The persona's structured tail records actual consumption against each cap.
+
+### Silent-failure detection
+
+After all personas return, inspect each persona's structured tail. **If a persona's tail shows zero `agent-browser` CLI activity** (zero invocations, no URLs visited, no screenshots), tag the persona's output with `silent-failure: no browser activity recorded — possible silent failure`. Surface that tag in the synthesis (Step 6) so the reader can treat that persona's narrative with appropriate skepticism — a live-app persona that produced narrative without invoking the browser cannot have observed the application.
 
 ## Step 5: Present individual narratives
 
