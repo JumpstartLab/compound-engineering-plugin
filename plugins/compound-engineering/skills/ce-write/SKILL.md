@@ -24,22 +24,15 @@ Extract from the input:
 
 ## Step 2: Locate the voice guide
 
-The voice guide is the single source of truth for how Jeff writes. Find it in priority order:
+The voice guide is the single source of truth for how the author writes. The canonical copy is served live; local files are cache and fallback. Resolve in priority order:
 
-```bash
-# 1. Project override, if this project has a house voice
-VOICE_GUIDE=""
-if [ -f "docs/writing/voice-guide.md" ]; then
-  VOICE_GUIDE="docs/writing/voice-guide.md"
-# 2. The live, compounding guide
-elif [ -f "$HOME/.config/compound-engineering/voice-guide.md" ]; then
-  VOICE_GUIDE="$HOME/.config/compound-engineering/voice-guide.md"
-fi
-```
+1. **The voice service (preferred).** If a `rotunda` MCP connection is available, call its `voice_guide` tool. Write the returned body to `$HOME/.config/compound-engineering/voice-guide.md` (refreshing the local cache) and use that path as `VOICE_GUIDE`. This guarantees the latest compounded rules on every machine.
+2. **Project override:** `docs/writing/voice-guide.md`, when this project has a house voice.
+3. **Local cache:** `$HOME/.config/compound-engineering/voice-guide.md` — possibly stale; note that in the run output.
 
-If no guide is found, report: "No voice-guide.md found. Seed it from ce-reviewers-jsl's voice/voice-guide.md into ~/.config/compound-engineering/, or run the Perkins bootstrap. Proceeding will produce generic prose, not Jeff's voice." Then either stop (pipeline mode) or ask whether to proceed.
+If none resolves, report: "No voice guide available (no rotunda MCP connection, no local voice-guide.md). Proceeding will produce generic prose, not the author's voice." Then either stop (pipeline mode) or ask whether to proceed.
 
-Read the voice guide in full before generating anything. It is loaded fresh every run so the latest compounded rules apply.
+Read the voice guide in full before generating anything.
 
 ## Step 3: Determine the working directory
 

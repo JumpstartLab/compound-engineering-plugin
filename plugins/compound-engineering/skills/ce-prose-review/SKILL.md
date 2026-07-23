@@ -37,16 +37,21 @@ If no `category: writing` reviewers are found, report: "No writing reviewers fou
 
 ## Step 3: Locate the voice guide
 
-Same resolution the reviewers use, so the skill can confirm it exists and pass its path:
+The canonical guide is served live; local files are cache and fallback:
 
-1. `docs/writing/voice-guide.md` (project override), else
-2. `$HOME/.config/compound-engineering/voice-guide.md` (the live guide).
+1. **Voice service (preferred).** If a `rotunda` MCP connection is available, call its `voice_guide` tool, write the body to `$HOME/.config/compound-engineering/voice-guide.md` (refreshing the cache), and use that path.
+2. `docs/writing/voice-guide.md` (project override), else
+3. `$HOME/.config/compound-engineering/voice-guide.md` (cache — possibly stale).
 
-If neither exists, warn that the panel will fall back to first principles and be much weaker, then proceed (or stop in headless mode).
+If none resolves, warn that the panel will fall back to first principles and be much weaker, then proceed (or stop in headless mode).
 
 ## Step 4: Read the inputs
 
 Read the target draft in full and the brief if provided. These are passed to every reviewer as content (the draft is the whole point of the review; pass it inline, not as a path the subagent must re-open).
+
+## Step 4.5: Stylometric pre-pass
+
+Before dispatching the panel, get the mechanical verdict. If a `rotunda` MCP connection is available, call `voice_lint` with the draft and its register band (inferred from the brief per the guide's register section). Keep the result for synthesis: the lint measures architecture (sentence mix, paragraph pacing, question and punctuation rates) that human-style review reliably misses — a panel can pass prose that the numbers expose as machine-shaped. Without the connection, skip and note it in the output.
 
 ## Step 5: Dispatch the panel
 
@@ -88,6 +93,9 @@ Collect the seven JSON responses. Then:
 
 ### Reads-aloud check
 <Provost's rhythm verdict — clean, uneven, or monotone, with the worst passage.>
+
+### Stylometric gate
+<voice_lint verdict (pass/borderline/fail) with the flagged metrics and their draft-vs-author values; "not run — no rotunda connection" when skipped. A fail here blocks ship even when the panel is clean.>
 
 ### Candidate voice-guide rules
 <Merged voice_guide_updates_needed — hand to the compound phase.>
