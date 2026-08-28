@@ -9,6 +9,13 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.64.1](https://github.com/JumpstartLab/compound-engineering-plugin/compare/compound-engineering-v2.64.0...compound-engineering-v2.64.1) (2026-08-28)
+
+
+### Bug Fixes
+
+* **ce-user-scenarios:** sonnet floor for user persona agents ([#16](https://github.com/JumpstartLab/compound-engineering-plugin/issues/16)) ([8fbf84a](https://github.com/JumpstartLab/compound-engineering-plugin/commit/8fbf84ab67650b631e6985249faa465cbb20eb64))
+
 ## [2.64.0](https://github.com/JumpstartLab/compound-engineering-plugin/compare/compound-engineering-v2.63.0...compound-engineering-v2.64.0) (2026-07-23)
 
 
