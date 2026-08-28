@@ -78,14 +78,9 @@ For each phase in the `phases` list from frontmatter:
 
 ## Step 6: Review preferences
 
-When invoking `/ce:review`, pass the orchestrator's `review-preferences` and `synthesis` configuration as context:
+When invoking `/ce:review`, pass the orchestrator's `review-preferences` and `synthesis` configuration as context. The orchestrator's own definitions govern their semantics — common keys include a reviewer `team`, a `max-reviewers` cap, a `reviewer-model` floor, and `synthesis.lens` (passed to the synthesis pass to shape how findings are weighted).
 
-- **min-reviewers** — Minimum number of reviewers to spawn
-- **require-categories** — Categories that must be represented (warn if no reviewer available)
-- **prefer-categories** — Categories to include if available
-- **synthesis.lens** — Pass this to the synthesis reviewer to shape how findings are weighted
-
-These preferences guide reviewer selection but don't override the existing ce:review selection logic — they add constraints on top of it.
+When the orchestrator declares `roster: replace`, its team SUBSTITUTES for ce:review's default reviewer selection (keeping only the pipeline anchors the orchestrator names) — never spawn both rosters. Without `roster: replace`, preferences add constraints on top of ce:review's own selection, still respecting any `max-reviewers` cap. Running the orchestrator's roster on top of the default set is how review phases have ballooned past a dozen concurrent agents.
 
 ## Step 7: Model selection
 
