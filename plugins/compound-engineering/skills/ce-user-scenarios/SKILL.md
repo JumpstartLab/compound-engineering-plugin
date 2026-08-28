@@ -84,7 +84,7 @@ For each persona file discovered in Step 2:
    - `{persona_file}` -- the full persona markdown content
    - `{stage_framing}` -- the stage-specific framing block
    - `{feature_context}` -- the assembled feature context from Step 3
-4. Spawn a sub-agent with `model: haiku` using the constructed prompt
+4. Spawn a sub-agent using the constructed prompt, with `model:` set to the calling orchestrator's `agent-model:` when one is defined, otherwise `sonnet` -- persona evaluation is judgment work, and a persona that misses friction a user would hit costs more than the model tier saves
 
 Spawn all persona agents in parallel. If parallel dispatch is not supported, spawn sequentially.
 
