@@ -377,11 +377,11 @@ Pass the resulting path list to the `project-standards` persona inside a `<stand
 
 #### Model tiering
 
-Persona sub-agents do focused, scoped work and should use cheaper/faster models to reduce cost and latency. The orchestrator itself stays on the default (most capable) model.
+Reviewing is judgment work, and a reviewer that returns shallow or malformed findings costs more than the model tier saves -- dropped findings, re-review rounds, false confidence. The floor for judgment work is a mid-tier model, not the cheapest one.
 
-Use the platform's cheapest capable model for all persona and CE sub-agents. In Claude Code, pass `model: "haiku"` in the Agent tool call. On other platforms, use the equivalent fast/cheap tier (e.g., `gpt-4o-mini` in Codex). If the platform has no model override mechanism or the available model names are unknown, omit the model parameter and let agents inherit the default -- a working review on the parent model is better than a broken dispatch from an unrecognized model name.
+When an orchestrator persona defines `agent-model:` in its frontmatter, that value wins -- pass it as `model:` on every persona and CE sub-agent dispatch. Otherwise, pass `model: "sonnet"` in Claude Code (or the equivalent mid-tier on other platforms). If the platform has no model override mechanism or the available model names are unknown, omit the model parameter and let agents inherit the default -- a working review on the parent model is better than a broken dispatch from an unrecognized model name.
 
-CE always-on agents (agent-native-reviewer, learnings-researcher) and CE conditional agents (schema-drift-detector, deployment-verification-agent) also use the cheaper model tier since they perform scoped, focused work.
+The cheapest tier (`haiku` in Claude Code) is reserved for mechanical, spec-driven sub-tasks -- file searches, concrete summarization -- not for persona reviewers, whose whole job is judgment.
 
 The orchestrator (this skill) stays on the default model because it handles intent discovery, reviewer selection, finding merge/dedup, and synthesis -- tasks that benefit from stronger reasoning.
 
