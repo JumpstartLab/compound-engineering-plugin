@@ -39,7 +39,7 @@ If no `category: writing` reviewers are found, report: "No writing reviewers fou
 
 The canonical guide is served live; local files are cache and fallback:
 
-1. **Voice service (preferred).** If a `rotunda` MCP connection is available, call its `voice_guide` tool, write the body to `$HOME/.config/compound-engineering/voice-guide.md` (refreshing the cache), and use that path.
+1. **Voice service (preferred).** If a `feather` MCP connection is available (directly, or through the Switchboard catalog as `feather_voice_guide`), call its `voice_guide` tool, write the body to `$HOME/.config/compound-engineering/voice-guide.md` (refreshing the cache), and use that path. Feather is the canonical source; a `rotunda` connection's `voice_guide` is the stale hand-maintained copy and is the fallback.
 2. `docs/writing/voice-guide.md` (project override), else
 3. `$HOME/.config/compound-engineering/voice-guide.md` (cache — possibly stale).
 
@@ -51,7 +51,7 @@ Read the target draft in full and the brief if provided. These are passed to eve
 
 ## Step 4.5: Stylometric pre-pass
 
-Before dispatching the panel, get the mechanical verdict. If a `rotunda` MCP connection is available, call `voice_lint` with the draft and its register band (inferred from the brief per the guide's register section). Keep the result for synthesis: the lint measures architecture (sentence mix, paragraph pacing, question and punctuation rates) that human-style review reliably misses — a panel can pass prose that the numbers expose as machine-shaped. Without the connection, skip and note it in the output.
+Before dispatching the panel, get the mechanical verdict. If a `feather` MCP connection is available, call its `lint` tool with the draft and its band (expressive, analytical, or formal, inferred from the brief per the guide's register section); it returns kill-list and band findings plus sentence and paragraph stats. Otherwise, if a `rotunda` connection is available, call `voice_lint` with the draft and its register band. Keep the result for synthesis: the lint measures architecture (sentence mix, paragraph pacing, question and punctuation rates) that human-style review reliably misses — a panel can pass prose that the numbers expose as machine-shaped. Without the connection, skip and note it in the output.
 
 ## Step 5: Dispatch the panel
 
@@ -95,7 +95,7 @@ Collect the seven JSON responses. Then:
 <Provost's rhythm verdict — clean, uneven, or monotone, with the worst passage.>
 
 ### Stylometric gate
-<voice_lint verdict (pass/borderline/fail) with the flagged metrics and their draft-vs-author values; "not run — no rotunda connection" when skipped. A fail here blocks ship even when the panel is clean.>
+<voice_lint verdict (pass/borderline/fail) with the flagged metrics and their draft-vs-author values; "not run — no feather or rotunda connection" when skipped. A fail here blocks ship even when the panel is clean.>
 
 ### Candidate voice-guide rules
 <Merged voice_guide_updates_needed — hand to the compound phase.>

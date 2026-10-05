@@ -26,11 +26,11 @@ Extract from the input:
 
 The voice guide is the single source of truth for how the author writes. The canonical copy is served live; local files are cache and fallback. Resolve in priority order:
 
-1. **The voice service (preferred).** If a `rotunda` MCP connection is available, call its `voice_guide` tool. Write the returned body to `$HOME/.config/compound-engineering/voice-guide.md` (refreshing the local cache) and use that path as `VOICE_GUIDE`. This guarantees the latest compounded rules on every machine.
+1. **The voice service (preferred).** If a `feather` MCP connection is available (directly, or through the Switchboard catalog as `feather_voice_guide`), call its `voice_guide` tool. Feather renders the guide from its pattern data (forms, moves, constructions, bands, principles) and is the canonical source. Write the returned body to `$HOME/.config/compound-engineering/voice-guide.md` (refreshing the local cache) and use that path as `VOICE_GUIDE`. If only a `rotunda` connection is available, its `voice_guide` tool still serves the last hand-maintained copy; use it and note that the source is stale.
 2. **Project override:** `docs/writing/voice-guide.md`, when this project has a house voice.
 3. **Local cache:** `$HOME/.config/compound-engineering/voice-guide.md` — possibly stale; note that in the run output.
 
-If none resolves, report: "No voice guide available (no rotunda MCP connection, no local voice-guide.md). Proceeding will produce generic prose, not the author's voice." Then either stop (pipeline mode) or ask whether to proceed.
+If none resolves, report: "No voice guide available (no feather or rotunda MCP connection, no local voice-guide.md). Proceeding will produce generic prose, not the author's voice." Then either stop (pipeline mode) or ask whether to proceed.
 
 Read the voice guide in full before generating anything.
 
