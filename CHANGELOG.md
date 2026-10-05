@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.65.0](https://github.com/JumpstartLab/compound-engineering-plugin/compare/cli-v2.64.1...cli-v2.65.0) (2026-10-05)
+
+
+### Miscellaneous Chores
+
+* **cli:** Synchronize compound-engineering versions
+
 ## [2.64.1](https://github.com/JumpstartLab/compound-engineering-plugin/compare/cli-v2.64.0...cli-v2.64.1) (2026-08-28)
 
 
